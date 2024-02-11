@@ -6,18 +6,53 @@ using UnityEngine.InputSystem;
 
 public class WeaponHolder : MonoBehaviour
 {
-    private List<Weapon> weaponInventory;
-    private List<int> weaponClipSizeReg;
+    private List<Weapon> weaponInventory = new List<Weapon>();
+    private List<int> weaponClipSizeReg = new List<int>();
 
     public Vector3 AimingDirection { get; private set; }
 
-    private void Start()
+    private bool isFiring = false;
+    private int selectedWeapon = 0;
+
+    private void Awake()
     {
-        weaponInventory = new List<Weapon>();
-        weaponClipSizeReg = new List<int>();
+        
     }
 
-    public IEnumerator FireWeapon(int weaponIndex)
+    private void OnEnable()
+    {
+        StartCoroutine(TryFiringWeapon());
+    }
+
+    private void OnDisable()
+    {
+        StopCoroutine(TryFiringWeapon());
+    }
+
+    private IEnumerator TryFiringWeapon()
+    {
+        while (true)
+        {
+            if (isFiring)
+            {
+                yield return Fire(selectedWeapon);
+                isFiring = false;
+            }
+            else
+            {
+                yield return null;
+            }
+
+        }
+    }
+
+    public void FireWeapon(int weaponIndex)
+    {
+        Debug.Log("Attempting to fire weapon!");
+        isFiring = true;
+        selectedWeapon = weaponIndex;
+    }
+    private IEnumerator Fire(int weaponIndex)
     {
         if (weaponIndex < 0 || weaponIndex >= weaponInventory.Count)
         {
@@ -26,12 +61,13 @@ public class WeaponHolder : MonoBehaviour
 
         Weapon weapon = weaponInventory[weaponIndex];
         int clipSize = weaponClipSizeReg[weaponIndex];
-
+        clipSize--;
         if (clipSize <= 0)
         {
             yield return new WaitForSeconds(weapon.reloadTime);
+            clipSize = weapon.clipSize;
         }
-
+        weaponClipSizeReg[weaponIndex] = clipSize;
         weapon.onFireEvent(weapon, this);
         yield return new WaitForSeconds(weapon.fireRate);
     }
@@ -54,5 +90,10 @@ public class WeaponHolder : MonoBehaviour
     {
         Gizmos.color = Color.red;
         Gizmos.DrawLine(transform.position, transform.position + (AimingDirection * 100.0f));
+    }
+
+    private void Update()
+    {
+
     }
 }

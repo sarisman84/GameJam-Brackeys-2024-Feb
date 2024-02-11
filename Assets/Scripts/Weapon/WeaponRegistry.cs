@@ -77,7 +77,7 @@ public static class WeaponRegistry
         {
             for (int i = 0; i < foundObjs.Length; ++i)
             {
-                if (foundObjs[i].GetComponent<IDamageable>() is IDamageable damageable)
+                if (foundObjs[i].GetComponent<Health>() is Health damageable)
                 {
                     damageable.OnDamageTaken(weapon.damage);
                 }

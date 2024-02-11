@@ -32,7 +32,7 @@ public class BulletManager : MonoBehaviour
     public static BulletManager Get { get; private set; }
     private void Awake()
     {
-       
+
         GameObject[] loadedBulletModels = Resources.LoadAll<GameObject>("Bullets");
         for (int i = 0; i < loadedBulletModels.Length; ++i)
         {
@@ -106,13 +106,12 @@ public class BulletManager : MonoBehaviour
 
             if (bullet.lifetime <= 0)
             {
-                Debug.Log("Disabling Bullet - Ran out of lifetime.");
+
                 pooledBullets[i] = DisableBullet(bullet);
                 availableBullets.Push(i);
                 continue;
             }
             bullet.lifetime -= Time.fixedDeltaTime;
-            Debug.Log(bullet.lifetime);
 
             var gameObj = bullet.gameObject;
 
@@ -120,7 +119,6 @@ public class BulletManager : MonoBehaviour
 
             if (result.Length > 0)
             {
-                Debug.Log("Disabling Bullet - Collided against something.");
                 bullet.lifetime = 0;
                 bullet.onBulletCollisionEvent?.Invoke(bullet.gameObject, result);
                 pooledBullets[i] = DisableBullet(bullet);
