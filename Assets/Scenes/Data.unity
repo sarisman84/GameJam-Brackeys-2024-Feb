@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -152,6 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 427f4a9f709c3ac4daec33c28aa40ab9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemyPoolSize: 100
 --- !u!4 &211440486
 Transform:
   m_ObjectHideFlags: 0
@@ -215,3 +216,67 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1815979875
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1815979876}
+  - component: {fileID: 1815979877}
+  m_Layer: 0
+  m_Name: Level Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1815979876
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1815979875}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1815979877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1815979875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76f6a01ca15313340924ee1a5ebda6cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridWidth: 4
+  gridHeight: 4
+  tileWidth: 50
+  tileHeight: 50
+  tileData:
+  - {fileID: 11400000, guid: 5370e372bebae984a9eed9a6f1185c1d, type: 2}
+  - {fileID: 11400000, guid: f58b114b55da2f645b1305f2598c360c, type: 2}
+  - {fileID: 11400000, guid: 0dbe14e3b21c20f4a9ea479a47c33f4c, type: 2}
+  - {fileID: 11400000, guid: 8e3feda0a3085ec4399d0e6bd75ec0ce, type: 2}
+  - {fileID: 11400000, guid: 40df447a1c387d949b6fe500b5b613d7, type: 2}
+  - {fileID: 11400000, guid: 3075d20548d6f174c935464819331a40, type: 2}
+  - {fileID: 11400000, guid: 709515d7ddb5e0c45a3f1d7177df45f9, type: 2}
+  - {fileID: 11400000, guid: 046ffb8f889c3234eb360da5062fb533, type: 2}
+  - {fileID: 11400000, guid: 2de313f4d66cf1d498494be292c9bce7, type: 2}
+  - {fileID: 11400000, guid: 6717739a706e57e4ab325f076f370cfd, type: 2}
+  - {fileID: 11400000, guid: 9aa0cb9ffe33fcf42aa1bef38f68df90, type: 2}
+  - {fileID: 11400000, guid: c1bdf81310510c4449b74ac64125b811, type: 2}
+  - {fileID: 11400000, guid: 9f10e3dd8c432d24a859751f4a9bda26, type: 2}
+  - {fileID: 11400000, guid: c5e899d71cf264a449fc20a915fd360b, type: 2}
+  - {fileID: 11400000, guid: 703448c6ee563e945b9f22b704ce2e47, type: 2}
