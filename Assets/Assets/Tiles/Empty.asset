@@ -13,37 +13,31 @@ MonoBehaviour:
   m_Name: Empty
   m_EditorClassIdentifier: 
   tileRotation: 0
-  tileWeight: 0.1
-  prefab: {fileID: 8468003257573195217, guid: 7bedfcdccaed60b4c99abaafc84e62fb, type: 3}
+  tileWeight: 0.05
+  edgeTileWeight: 0.5
+  prefab: {fileID: 475817376997462934, guid: 782f6733f608d10499b9391b5809ebbf, type: 3}
+  tag: 
   validTiles_North:
-  - {fileID: 11400000}
-  - {fileID: 11400000, guid: 3075d20548d6f174c935464819331a40, type: 2}
-  - {fileID: 11400000, guid: 709515d7ddb5e0c45a3f1d7177df45f9, type: 2}
-  - {fileID: 11400000, guid: 046ffb8f889c3234eb360da5062fb533, type: 2}
-  - {fileID: 11400000, guid: f58b114b55da2f645b1305f2598c360c, type: 2}
-  - {fileID: 11400000, guid: 0dbe14e3b21c20f4a9ea479a47c33f4c, type: 2}
-  - {fileID: 11400000, guid: 9aa0cb9ffe33fcf42aa1bef38f68df90, type: 2}
+  - {fileID: 11400000, guid: f696a00be58399e4782032e1d9d82e5d, type: 2}
+  - {fileID: 11400000, guid: 2d8a9c4926c9bd84e8fd7e6fd1209f31, type: 2}
+  - {fileID: 11400000, guid: 3b2c579505bdc814085bb72ab6da70b1, type: 2}
+  - {fileID: 11400000, guid: 37effb6b76891604bb6466c3deb0f35c, type: 2}
+  - {fileID: 11400000, guid: 881d9af227f5f5a44a4e48b6abd521c9, type: 2}
   validTiles_South:
-  - {fileID: 11400000}
-  - {fileID: 11400000, guid: 3075d20548d6f174c935464819331a40, type: 2}
-  - {fileID: 11400000, guid: 709515d7ddb5e0c45a3f1d7177df45f9, type: 2}
-  - {fileID: 11400000, guid: 046ffb8f889c3234eb360da5062fb533, type: 2}
-  - {fileID: 11400000, guid: 8e3feda0a3085ec4399d0e6bd75ec0ce, type: 2}
-  - {fileID: 11400000, guid: 40df447a1c387d949b6fe500b5b613d7, type: 2}
-  - {fileID: 11400000, guid: c1bdf81310510c4449b74ac64125b811, type: 2}
+  - {fileID: 11400000, guid: 33372f2e9fc0c91498b78667dd6473a5, type: 2}
+  - {fileID: 11400000, guid: 13d0bda52a0527c4091ebdb03a58ae6f, type: 2}
+  - {fileID: 11400000, guid: a06a4c835a1f60f4ca575db577311813, type: 2}
+  - {fileID: 11400000, guid: bdc2ebf9859ad6c41b6050f9fa8665c2, type: 2}
+  - {fileID: 11400000, guid: 7648647ba421cb64dbf89b547a00ab8e, type: 2}
   validTiles_East:
-  - {fileID: 11400000}
-  - {fileID: 11400000, guid: 2de313f4d66cf1d498494be292c9bce7, type: 2}
-  - {fileID: 11400000, guid: 9f10e3dd8c432d24a859751f4a9bda26, type: 2}
-  - {fileID: 11400000, guid: c5e899d71cf264a449fc20a915fd360b, type: 2}
-  - {fileID: 11400000, guid: 703448c6ee563e945b9f22b704ce2e47, type: 2}
-  - {fileID: 11400000, guid: 8e3feda0a3085ec4399d0e6bd75ec0ce, type: 2}
-  - {fileID: 11400000, guid: f58b114b55da2f645b1305f2598c360c, type: 2}
+  - {fileID: 11400000, guid: 13d0bda52a0527c4091ebdb03a58ae6f, type: 2}
+  - {fileID: 11400000, guid: 3b2c579505bdc814085bb72ab6da70b1, type: 2}
+  - {fileID: 11400000, guid: 9ad58ca0afba40e4a819e6c10f208ccc, type: 2}
+  - {fileID: 11400000, guid: 881d9af227f5f5a44a4e48b6abd521c9, type: 2}
+  - {fileID: 11400000, guid: bdc2ebf9859ad6c41b6050f9fa8665c2, type: 2}
   validTiles_West:
-  - {fileID: 11400000}
-  - {fileID: 11400000, guid: 6717739a706e57e4ab325f076f370cfd, type: 2}
-  - {fileID: 11400000, guid: 0dbe14e3b21c20f4a9ea479a47c33f4c, type: 2}
-  - {fileID: 11400000, guid: 40df447a1c387d949b6fe500b5b613d7, type: 2}
-  - {fileID: 11400000, guid: 9f10e3dd8c432d24a859751f4a9bda26, type: 2}
-  - {fileID: 11400000, guid: c5e899d71cf264a449fc20a915fd360b, type: 2}
-  - {fileID: 11400000, guid: 703448c6ee563e945b9f22b704ce2e47, type: 2}
+  - {fileID: 11400000, guid: 2d8a9c4926c9bd84e8fd7e6fd1209f31, type: 2}
+  - {fileID: 11400000, guid: 9895f3ec219b2fb408a921eb66417ede, type: 2}
+  - {fileID: 11400000, guid: a06a4c835a1f60f4ca575db577311813, type: 2}
+  - {fileID: 11400000, guid: 7648647ba421cb64dbf89b547a00ab8e, type: 2}
+  - {fileID: 11400000, guid: 37effb6b76891604bb6466c3deb0f35c, type: 2}

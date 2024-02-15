@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d86798d8b8bcbd04ca63b597f84b7f86, type: 3}
+  m_Name: R - Wall [Invert Horizontal]
+  m_EditorClassIdentifier: 
+  tileRotation: 180
+  tileWeight: 0
+  edgeTileWeight: 1.5
+  prefab: {fileID: 4342920491027708246, guid: 50c4214b28f59d34a98f91effa29af4f, type: 3}
+  tag: 
+  validTiles_North:
+  - {fileID: 11400000, guid: 5370e372bebae984a9eed9a6f1185c1d, type: 2}
+  validTiles_South:
+  - {fileID: 11400000, guid: 530ee6576886472488f98b189cf615a8, type: 2}
+  - {fileID: 11400000, guid: 563508c965e343641a992da2ed870315, type: 2}
+  - {fileID: 11400000, guid: acb290446ea768d45a2ed868df7d735b, type: 2}
+  - {fileID: 11400000, guid: e4a015c2c8c3c26428f3aef64857e691, type: 2}
+  validTiles_East:
+  - {fileID: 11400000}
+  - {fileID: 11400000, guid: a06a4c835a1f60f4ca575db577311813, type: 2}
+  - {fileID: 11400000, guid: 37effb6b76891604bb6466c3deb0f35c, type: 2}
+  validTiles_West:
+  - {fileID: 11400000}
+  - {fileID: 11400000, guid: 13d0bda52a0527c4091ebdb03a58ae6f, type: 2}
+  - {fileID: 11400000, guid: 881d9af227f5f5a44a4e48b6abd521c9, type: 2}

@@ -18,6 +18,8 @@ public class EnemyManager : MonoBehaviour
         public FollowBehaviour followBehaviour;
         public WeaponHolder weaponHolder;
         public GameObject gameObject;
+        public bool isActive;
+        public bool isAlive;
     }
 
     private static EnemyManager instance;
@@ -29,7 +31,7 @@ public class EnemyManager : MonoBehaviour
     private List<Enemy> pooledEnemyComponents = new List<Enemy>();
     private Stack<int> availableEnemies = new Stack<int>();
 
-    private GameObject player;
+    private GameObject Player => GameplayManager.Get.Player.gameObject;
 
     public int enemyPoolSize = 100;
     private void Awake()
@@ -97,10 +99,25 @@ public class EnemyManager : MonoBehaviour
         }
 
         enemy.gameObject = childObj;
+        enemy.isActive = false;
+        enemy.isAlive = true;
 
         instance.pooledEnemyComponents[index] = enemy;
 
         return childObj;
+    }
+
+    public static void SetAliveEnemyStates(bool newState)
+    {
+        for (int i = 0; i < instance.pooledEnemyComponents.Count; i++)
+        {
+            var enemy = instance.pooledEnemyComponents[i];
+            if (enemy.isAlive)
+            {
+                enemy.isActive = newState;
+                instance.pooledEnemyComponents[i] = enemy;
+            }
+        }
     }
 
     private static void OnEnemyDeath(GameObject owner)
@@ -108,15 +125,14 @@ public class EnemyManager : MonoBehaviour
         KillEnemy(owner);
     }
 
-    public static void RegisterPlayer(GameObject potentialPlayer)
-    {
-        instance.player = potentialPlayer;
-    }
-
     public static void KillEnemy(GameObject enemyToKill)
     {
         var index = instance.pooledEnemyIDs.IndexOf(enemyToKill.GetInstanceID());
         if (index < 0) { return; }
+        var entry = instance.pooledEnemyComponents[index];
+        entry.isAlive = false;
+        instance.pooledEnemyComponents[index] = entry;
+
         instance.pooledEnemies[index].SetActive(false);
         instance.availableEnemies.Push(index);
     }
@@ -140,14 +156,14 @@ public class EnemyManager : MonoBehaviour
     {
         for (int i = 0; i < pooledEnemies.Count; ++i)
         {
-            if (!pooledEnemies[i].activeSelf || !pooledEnemyComponents[i].gameObject)
+            if (!pooledEnemies[i].activeSelf || !pooledEnemyComponents[i].gameObject || !pooledEnemyComponents[i].isActive)
             {
                 continue;
             }
 
             var enemy = pooledEnemyComponents[i];
-            var playerDir = player.transform.position - enemy.gameObject.transform.position;
-            var dist = Vector3.Distance(player.transform.position, enemy.gameObject.transform.position);
+            var playerDir = Player.transform.position - enemy.gameObject.transform.position;
+            var dist = Vector3.Distance(Player.transform.position, enemy.gameObject.transform.position);
             if (enemy.aimBehaviour && enemy.weaponHolder)
             {
                 bool isWithinRange = dist <= enemy.aimBehaviour.detectionRadius;

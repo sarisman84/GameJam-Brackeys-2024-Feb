@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d86798d8b8bcbd04ca63b597f84b7f86, type: 3}
+  m_Name: R - Corner [90]
+  m_EditorClassIdentifier: 
+  tileRotation: 90
+  tileWeight: 0
+  edgeTileWeight: 1.5
+  prefab: {fileID: 9181767363509125599, guid: 286566604c777054a9117c16a5abbe5b, type: 3}
+  tag: 
+  validTiles_North:
+  - {fileID: 11400000, guid: 9ad58ca0afba40e4a819e6c10f208ccc, type: 2}
+  - {fileID: 11400000, guid: 7648647ba421cb64dbf89b547a00ab8e, type: 2}
+  validTiles_South:
+  - {fileID: 11400000, guid: 5370e372bebae984a9eed9a6f1185c1d, type: 2}
+  validTiles_East:
+  - {fileID: 11400000, guid: f696a00be58399e4782032e1d9d82e5d, type: 2}
+  - {fileID: 11400000}
+  validTiles_West:
+  - {fileID: 11400000, guid: 5370e372bebae984a9eed9a6f1185c1d, type: 2}

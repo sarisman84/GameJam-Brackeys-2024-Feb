@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -168,6 +168,62 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &822144157
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 822144159}
+  - component: {fileID: 822144158}
+  m_Layer: 0
+  m_Name: Gameplay Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &822144158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822144157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75cf052929331b745b03f1c9958acf5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerSpawnTileTag: Interior
+  goalPrefab: {fileID: 5647003180316576221, guid: 5ac3ab5e76046c5479ab1a10f1b64b8c, type: 3}
+  tileSize: {x: 10, y: 10}
+  difficultyList:
+  - minDifficultyRate: 0
+    gridSize: {x: 5, y: 5}
+    minPlayerToGoalDistance: 4
+    minEnemyAmount: 3
+    maxEnemyAmount: 6
+    enemyTypes:
+    - spawnWeight: 0.5
+      enemyType: Turret
+--- !u!4 &822144159
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822144157}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &862572135
 GameObject:
   m_ObjectHideFlags: 0
@@ -260,23 +316,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76f6a01ca15313340924ee1a5ebda6cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridWidth: 4
-  gridHeight: 4
-  tileWidth: 50
-  tileHeight: 50
   tileData:
   - {fileID: 11400000, guid: 5370e372bebae984a9eed9a6f1185c1d, type: 2}
-  - {fileID: 11400000, guid: f58b114b55da2f645b1305f2598c360c, type: 2}
-  - {fileID: 11400000, guid: 0dbe14e3b21c20f4a9ea479a47c33f4c, type: 2}
-  - {fileID: 11400000, guid: 8e3feda0a3085ec4399d0e6bd75ec0ce, type: 2}
-  - {fileID: 11400000, guid: 40df447a1c387d949b6fe500b5b613d7, type: 2}
-  - {fileID: 11400000, guid: 3075d20548d6f174c935464819331a40, type: 2}
-  - {fileID: 11400000, guid: 709515d7ddb5e0c45a3f1d7177df45f9, type: 2}
-  - {fileID: 11400000, guid: 046ffb8f889c3234eb360da5062fb533, type: 2}
-  - {fileID: 11400000, guid: 2de313f4d66cf1d498494be292c9bce7, type: 2}
-  - {fileID: 11400000, guid: 6717739a706e57e4ab325f076f370cfd, type: 2}
-  - {fileID: 11400000, guid: 9aa0cb9ffe33fcf42aa1bef38f68df90, type: 2}
-  - {fileID: 11400000, guid: c1bdf81310510c4449b74ac64125b811, type: 2}
-  - {fileID: 11400000, guid: 9f10e3dd8c432d24a859751f4a9bda26, type: 2}
-  - {fileID: 11400000, guid: c5e899d71cf264a449fc20a915fd360b, type: 2}
-  - {fileID: 11400000, guid: 703448c6ee563e945b9f22b704ce2e47, type: 2}
+  - {fileID: 11400000, guid: 1929307e9b6f8ab43bd5fc208cb40381, type: 2}
+  - {fileID: 11400000, guid: c9e0b62d95878c54aa8fac637a373771, type: 2}
+  - {fileID: 11400000, guid: feddd7880e689024981d209f90e2f0e8, type: 2}
+  - {fileID: 11400000, guid: 690cb8c693ecee1408961765e670fdfc, type: 2}
+  - {fileID: 11400000, guid: 563508c965e343641a992da2ed870315, type: 2}
+  - {fileID: 11400000, guid: 620b25da48b86b84f890289c8da7419e, type: 2}
+  - {fileID: 11400000, guid: b74702a1dda6f384baec61f38f4bf498, type: 2}
+  - {fileID: 11400000, guid: e4a015c2c8c3c26428f3aef64857e691, type: 2}
+  - {fileID: 11400000, guid: 93ba6d6c34fec0041a5f55f179b55a08, type: 2}
+  - {fileID: 11400000, guid: bdd4ad0c37003e848afee963ed9ea0fd, type: 2}
+  - {fileID: 11400000, guid: acb290446ea768d45a2ed868df7d735b, type: 2}
+  - {fileID: 11400000, guid: 00651e2f41d68ec4cb633e014e2da25a, type: 2}
+  - {fileID: 11400000, guid: 2d8a9c4926c9bd84e8fd7e6fd1209f31, type: 2}
+  - {fileID: 11400000, guid: 3b2c579505bdc814085bb72ab6da70b1, type: 2}
+  - {fileID: 11400000, guid: 13d0bda52a0527c4091ebdb03a58ae6f, type: 2}
+  - {fileID: 11400000, guid: a06a4c835a1f60f4ca575db577311813, type: 2}
+  - {fileID: 11400000, guid: 530ee6576886472488f98b189cf615a8, type: 2}
+  - {fileID: 11400000, guid: bdc2ebf9859ad6c41b6050f9fa8665c2, type: 2}
+  - {fileID: 11400000, guid: 7648647ba421cb64dbf89b547a00ab8e, type: 2}
+  - {fileID: 11400000, guid: 37effb6b76891604bb6466c3deb0f35c, type: 2}
+  - {fileID: 11400000, guid: 881d9af227f5f5a44a4e48b6abd521c9, type: 2}
+  - {fileID: 11400000, guid: f696a00be58399e4782032e1d9d82e5d, type: 2}
+  - {fileID: 11400000, guid: 33372f2e9fc0c91498b78667dd6473a5, type: 2}
+  - {fileID: 11400000, guid: 9895f3ec219b2fb408a921eb66417ede, type: 2}
+  - {fileID: 11400000, guid: 9ad58ca0afba40e4a819e6c10f208ccc, type: 2}
