@@ -2,59 +2,44 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
-[System.Serializable]
-public struct Weapon : IComparable, IEquatable<Weapon>
-{
-    public string name;
-    public float fireRate;
-    public float fireLifetime;
-    public float fireVelocity;
-    public int damage;
-    public int clipSize;
-    public float reloadTime;
-    public string bulletPrefabID;
-
-    public Action<Weapon, WeaponHolder> onFireEvent;
-
-    public int CompareTo(object obj)
-    {
-        if (obj is not Weapon) { return 0; }
-        Weapon otherWeapon = (Weapon)obj;
-        return damage > otherWeapon.damage ? 1 : -1;
-    }
-
-    public bool Equals(Weapon other)
-    {
-        return name == other.name;
-    }
-}
 public static class WeaponRegistry
 {
     private static Dictionary<string, Weapon> weaponRegistry = new Dictionary<string, Weapon>();
+    private static Dictionary<string, Action<Weapon, WeaponHolder>> firePatterns = new Dictionary<string, Action<Weapon, WeaponHolder>>();
     public static Weapon GetWeapon(string weaponID) => weaponRegistry[weaponID];
 
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     public static void OnRuntimeInit()
     {
-        InitDefaultWeapons();
+        LoadWeaponsFromResources();
+        InitFirePatterns();
     }
 
-    private static void InitDefaultWeapons()
+    private static void LoadWeaponsFromResources()
     {
-        Weapon weapon = new Weapon();
-        weapon.name = "Gun";
-        weapon.bulletPrefabID = "DefaultBullet";
-        weapon.clipSize = 10;
-        weapon.fireRate = 0.5f;
-        weapon.damage = 1;
-        weapon.reloadTime = 0.65f;
-        weapon.fireLifetime = 1.5f;
-        weapon.fireVelocity = 50.0f;
-        weapon.onFireEvent = DefaultFirePattern;
+        var foundWeapons = Resources.LoadAll<Weapon>("Weapons");
+        if (foundWeapons == null || foundWeapons.Length <= 0)
+        {
+            throw new NullReferenceException("Could not find any weapons!");
+        }
 
-        weaponRegistry[weapon.name.ToLower()] = weapon;
+        foreach (var weapon in foundWeapons)
+        {
+            weaponRegistry.Add(weapon.name.ToLower(), weapon);
+        }
+
+    }
+
+    public static void OnFireEvent(string weaponID, WeaponHolder owner)
+    {
+        var weapon = weaponRegistry[weaponID];
+        firePatterns[weapon.firePattern](weapon, owner);
+    }
+
+    private static void InitFirePatterns()
+    {
+        firePatterns.Add("default", DefaultFirePattern);
     }
 
     private static void DefaultFirePattern(Weapon weapon, WeaponHolder owner)
@@ -67,7 +52,7 @@ public static class WeaponRegistry
         bullet.rotation = Quaternion.LookRotation(owner.AimingDirection);
         bullet.position = barrel;
         bullet.scale = Vector3.one * 0.45f;
-        bullet.bulletPrefabID = weapon.bulletPrefabID;
+        bullet.bulletPrefabID = weapon.bulletPrefab.name.ToLower();
         bullet.onBulletUpdateEvent = (GameObject bullet) =>
         {
             bullet.transform.position += (bullet.transform.forward * weapon.fireVelocity) * Time.fixedDeltaTime;

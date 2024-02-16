@@ -139,7 +139,7 @@ public class LevelGenerator : MonoBehaviour
         gridWidth = gridSize.x;
         gridHeight = gridSize.y;
 
-        ResetTileGrid();
+        yield return ResetTileGrid();
         while (!IsCollapsed())
         {
             yield return Iterate();
@@ -150,11 +150,11 @@ public class LevelGenerator : MonoBehaviour
         onGenerationComplete?.Invoke(grid);
     }
 
-    private void ResetTileGrid()
+    private IEnumerator ResetTileGrid()
     {
         if (grid != null)
         {
-            StartCoroutine(ClearTileGrid());
+            yield return ClearTileGrid();
         }
 
         grid = new Tile[gridWidth * gridHeight];

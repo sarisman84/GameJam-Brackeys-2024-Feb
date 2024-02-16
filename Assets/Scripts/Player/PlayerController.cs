@@ -27,15 +27,20 @@ public class PlayerController : MonoBehaviour
     private bool usingWeapon;
     private Plane plane = new Plane(Vector3.up, 0);
     private Health healthComponent;
+
+    private UIManager.UIView lastKnownView;
+
+
+
     void Start()
     {
-        GameplayManager.Get.RegisterPlayer(this);
+        GameplayManager.RegisterPlayer(this);
         cam = Camera.main;
         liveCam = cam.GetLiveCamera();
-        weaponHolder = GetComponent<WeaponHolder>();
 
-        GetHealth().onDeathEvent += PlayerDeath;
-        weaponHolder.AddWeapon("gun");
+
+        Health.onDeathEvent += PlayerDeath;
+        WeaponHolder.AddWeapon("gun");
 
         characterController = GetComponent<CharacterController>();
         inputActions.FindAction("move").performed += OnMovePerformed;
@@ -43,6 +48,21 @@ public class PlayerController : MonoBehaviour
         inputActions.FindAction("fire").performed += OnFirePerformed;
         inputActions.FindAction("fire").canceled += OnFireCanceled;
         inputActions.FindAction("aim").performed += OnAimPerformed;
+        inputActions.FindAction("weapon_select").performed += OnWeaponSelectPerformed;
+        inputActions.FindAction("weapon_select").canceled += OnWeaponSelectCanceled;
+    }
+
+    private void OnWeaponSelectCanceled(InputAction.CallbackContext context)
+    {
+        lastKnownView = UIManager.CurrentView;
+        UIManager.SetCurrentViewTo(UIManager.UIView.WeaponSelect);
+        var weaponSelectView = UIManager.GetView<WeaponSelectView>(UIManager.UIView.WeaponSelect);
+        weaponSelectView.PopulateWeaponWheel(WeaponHolder.GetWeaponInventory());
+    }
+
+    private void OnWeaponSelectPerformed(InputAction.CallbackContext context)
+    {
+        UIManager.SetCurrentViewTo(lastKnownView);
     }
 
     private void PlayerDeath(GameObject self)
@@ -59,7 +79,7 @@ public class PlayerController : MonoBehaviour
         {
             var worldPos = ray.GetPoint(distance);
             var dir = worldPos - transform.position;
-            weaponHolder.SetAimingDir(dir);
+            WeaponHolder.SetAimingDir(dir);
         }
 
 
@@ -99,6 +119,11 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (GameplayManager.IsPaused)
+        {
+            return;
+        }
+
         currentDir = Vector2.Lerp(currentDir, inputDir, inputDir.magnitude < currentDir.magnitude ? decceleration : acceleration);
         var motion = new Vector3(currentDir.x * movementSpeed, 0, currentDir.y * movementSpeed);
         var forwardDir = liveCam.transform.up;
@@ -111,7 +136,7 @@ public class PlayerController : MonoBehaviour
 
         if (usingWeapon)
         {
-            weaponHolder.FireWeapon(0);
+            weaponHolder.FireWeapon();
         }
     }
 
@@ -122,15 +147,31 @@ public class PlayerController : MonoBehaviour
 
     public void SetPosition(Vector3 position)
     {
+        if (!characterController)
+            characterController = GetComponent<CharacterController>();
+
         characterController.enabled = false;
         transform.position = position;
         characterController.enabled = true;
     }
 
-    public Health GetHealth()
+    public Health Health
     {
-        if (!healthComponent)
-            healthComponent = gameObject.GetComponent<Health>();
-        return healthComponent;
+        get
+        {
+            if (!healthComponent)
+                healthComponent = gameObject.GetComponent<Health>();
+            return healthComponent;
+        }
+    }
+
+    public WeaponHolder WeaponHolder
+    {
+        get
+        {
+            if (!weaponHolder)
+                weaponHolder = GetComponent<WeaponHolder>();
+            return weaponHolder;
+        }
     }
 }

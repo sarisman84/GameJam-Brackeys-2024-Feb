@@ -17,14 +17,14 @@ public class AimBehaviour : MonoBehaviour
     private void Start()
     {
         holder = GetComponent<WeaponHolder>();
-        holder.AddWeapon("gun");
+        holder.AddWeapon("enemy_gun");
 
     }
 
     public void FireAtTarget(GameObject potentialTarget)
     {
         holder.SetAimingDir(potentialTarget.transform.position - transform.position);
-        holder.FireWeapon(0);
+        holder.FireWeapon();
     }
 
     private void OnDrawGizmos()

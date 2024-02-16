@@ -21,17 +21,7 @@ public enum RuntimeState
     Paused
 }
 
-public struct NextState
-{
-    public RuntimeState nextState;
-    public IEnumerator yieldCommand;
 
-    public NextState(RuntimeState _nextState, IEnumerator _yieldCommand)
-    {
-        nextState = _nextState;
-        yieldCommand = _yieldCommand;
-    }
-}
 public class GameplayManager : MonoBehaviour
 {
     [System.Serializable]
@@ -59,24 +49,25 @@ public class GameplayManager : MonoBehaviour
     public Vector2Int tileSize;
     public List<Difficulty> difficultyList = new List<Difficulty>();
 
-
-    private RuntimeState currentState;
     private int currentDifficulty;
 
-    private Dictionary<RuntimeState, Func<NextState>> stateMachine;
-    private bool runStateMachine = true;
+    private StateMachine<RuntimeState> stateMachine;
     private Difficulty CurrentDifficulty => difficultyList[currentDifficulty];
     private Difficulty NextDifficulty => difficultyList[Mathf.Clamp(currentDifficulty + 1, currentDifficulty + 1, difficultyList.Count - 1)];
 
-    public static GameplayManager Get { get; private set; }
-    public PlayerController Player { get; private set; }
-    public GameObject Goal { get; private set; }
+    private bool pauseFlag = false;
+    private static GameplayManager ins;
+    private int playerSpawnTileIndex;
+
+    public static PlayerController Player { get; private set; }
+    public static GameObject Goal { get; private set; }
+    public static bool IsPaused => ins.pauseFlag;
 
     private void Awake()
     {
-        Get = this;
+        ins = this;
         currentDifficulty = 0;
-        stateMachine = new Dictionary<RuntimeState, Func<NextState>>()
+        stateMachine = new StateMachine<RuntimeState>(new Dictionary<RuntimeState, Func<NextState<RuntimeState>>>()
         {
             { RuntimeState.StartGame, OnRuntimeStartCreateLevel },
             { RuntimeState.LevelComplete, OnRuntimeCreateLevel },
@@ -85,21 +76,19 @@ public class GameplayManager : MonoBehaviour
             { RuntimeState.LevelStart, StartLevelRuntime },
             { RuntimeState.LevelRuntime, UpdateLevel },
             { RuntimeState.LevelOver, GameOver }
-        };
-
-        currentState = RuntimeState.StartGame;
+        }, RuntimeState.StartGame);
 
 
     }
 
-    private NextState GameOver()
+    private NextState<RuntimeState> GameOver()
     {
         var result = LevelGenerator.ClearGeneratedWorld();
         EnemyManager.KillAllSpawnedEnemies();
-        return new NextState(RuntimeState.MainMenu, result);
+        return new NextState<RuntimeState>(RuntimeState.MainMenu, result);
     }
 
-    private NextState UpdateLevel()
+    private NextState<RuntimeState> UpdateLevel()
     {
         var nextState = RuntimeState.LevelRuntime;
 
@@ -107,87 +96,79 @@ public class GameplayManager : MonoBehaviour
         {
             nextState = RuntimeState.LevelComplete;
         }
-        else if (Player.GetHealth().HasDied)
+        else if (Player.Health.HasDied)
         {
             nextState = RuntimeState.LevelOver;
         }
 
 
 
-        return new NextState(nextState, null);
+        return new NextState<RuntimeState>(nextState, null);
     }
 
-    private NextState OnRuntimeCreateLevel()
+    private NextState<RuntimeState> OnRuntimeCreateLevel()
     {
-        return new NextState(RuntimeState.GeneratingWorld, null);
+
+        return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, null);
     }
 
-    private NextState StartLevelRuntime()
+    private NextState<RuntimeState> StartLevelRuntime()
     {
         EnemyManager.SetAliveEnemyStates(true);
-        return new NextState(RuntimeState.LevelRuntime, null);
+        UIManager.SetCurrentViewTo(UIManager.UIView.HUD);
+        return new NextState<RuntimeState>(RuntimeState.LevelRuntime, null);
     }
 
-    private NextState OnRuntimeStartCreateLevel()
+    private NextState<RuntimeState> OnRuntimeStartCreateLevel()
     {
-        return new NextState(RuntimeState.GeneratingWorld, RevivePlayer());
+        UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
+        return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, RevivePlayer());
     }
 
     private IEnumerator RevivePlayer()
     {
         yield return new WaitUntil(() => Player);
-        Player.GetHealth().Revive();
+        Player.Health.Revive();
     }
 
     private void OnEnable()
     {
-        StartCoroutine(CoroutineUpdate());
+        stateMachine.Start(this);
     }
 
     private void OnDisable()
     {
-        StopCoroutine(CoroutineUpdate());
+        stateMachine.Stop(this);
     }
 
-    private IEnumerator UpdateStateMachine()
+
+
+
+
+    private NextState<RuntimeState> GenerateWorld()
     {
-        if (!stateMachine.ContainsKey(currentState))
-        {
-            runStateMachine = false;
-            yield break;
-        }
-        var result = stateMachine[currentState]();
-        currentState = result.nextState;
-        yield return result.yieldCommand;
-
-
-    }
-
-    private IEnumerator CoroutineUpdate()
-    {
-        while (runStateMachine)
-        {
-            yield return UpdateStateMachine();
-        }
-    }
-
-    private NextState GenerateWorld()
-    {
+        PauseGame();
         Player.SetActive(false);
         var result = LevelGenerator.GenerateNewLevelAsync(CurrentDifficulty.gridSize, tileSize);
-        return new NextState(RuntimeState.PostWorldGeneration, result);
+        return new NextState<RuntimeState>(RuntimeState.PostWorldGeneration, result);
     }
 
-    private NextState SetWorldSettings()
+    private NextState<RuntimeState> SetWorldSettings()
     {
         var grid = LevelGenerator.GetTileGrid();
-        SpawnPlayer(grid, out var playerSpawnTileIndex);
-        SpawnGoal(grid, playerSpawnTileIndex);
-        SpawnEnemies(grid);
-        return new NextState(RuntimeState.LevelStart, ExtendedCoroutine.WaitForSeconds(1.5f));
+        return new NextState<RuntimeState>(RuntimeState.LevelStart, ApplyWorldSettings(grid));
     }
 
-    private void SpawnEnemies(LevelGenerator.Tile[] grid)
+    private IEnumerator ApplyWorldSettings(LevelGenerator.Tile[] grid)
+    {
+        yield return SpawnPlayer(grid);
+        yield return SpawnGoal(grid, playerSpawnTileIndex);
+        yield return SpawnEnemies(grid);
+        yield return new WaitForSeconds(0.5f);
+        UnpauseGame();
+    }
+
+    private IEnumerator SpawnEnemies(LevelGenerator.Tile[] grid)
     {
         var ammOfEnemies = Random.Range(CurrentDifficulty.minEnemyAmount, CurrentDifficulty.maxEnemyAmount + 1);
         var attempts = 100;
@@ -204,12 +185,13 @@ public class GameplayManager : MonoBehaviour
             }
 
             attempts--;
+            yield return null;
         }
 
 
     }
 
-    private void SpawnGoal(LevelGenerator.Tile[] grid, int playerSpawnTileIndex)
+    private IEnumerator SpawnGoal(LevelGenerator.Tile[] grid, int playerSpawnTileIndex)
     {
         var hasGoalSpawned = false;
         var attempts = 100;
@@ -228,6 +210,7 @@ public class GameplayManager : MonoBehaviour
                 break;
             }
             attempts--;
+            yield return null;
         }
 
         if (!hasGoalSpawned)
@@ -236,7 +219,7 @@ public class GameplayManager : MonoBehaviour
         }
     }
 
-    private void SpawnPlayer(LevelGenerator.Tile[] grid, out int playerSpawnTileIndex)
+    private IEnumerator SpawnPlayer(LevelGenerator.Tile[] grid)
     {
         var hasPlayerSpawned = false;
         var attempts = 100;
@@ -246,9 +229,9 @@ public class GameplayManager : MonoBehaviour
             var index = Random.Range(0, grid.Length);
             var tile = grid[index];
             var tileData = LevelGenerator.GetTileData(tile);
-            if (string.CompareOrdinal(tileData.tag, playerSpawnTileTag) == 0)
+            var tileController = tile.spawnedPrefab.GetComponent<TileController>();
+            if (string.CompareOrdinal(tileData.tag, playerSpawnTileTag) == 0 && tileController != null)
             {
-                var tileController = tile.spawnedPrefab.GetComponent<TileController>();
                 Player.SetActive(true);
                 Player.SetPosition(tileController.GetRandomSpawnPoint().position);
                 hasPlayerSpawned = true;
@@ -256,6 +239,7 @@ public class GameplayManager : MonoBehaviour
                 tileController.SetControllerAvailability(false);
                 break;
             }
+            yield return null;
             attempts--;
         }
 
@@ -263,11 +247,25 @@ public class GameplayManager : MonoBehaviour
         {
             throw new NullReferenceException("Player failed to spawn!");
         }
+
+
     }
 
-    public void RegisterPlayer(PlayerController player)
+    public static void RegisterPlayer(PlayerController player)
     {
         Player = player;
+    }
+
+    public static void PauseGame()
+    {
+        ins.pauseFlag = true;
+        AudioListener.pause = true;
+    }
+
+    public static void UnpauseGame()
+    {
+        ins.pauseFlag = false;
+        AudioListener.pause = false;
     }
 }
 

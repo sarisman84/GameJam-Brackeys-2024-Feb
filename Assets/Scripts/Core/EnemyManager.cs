@@ -31,7 +31,7 @@ public class EnemyManager : MonoBehaviour
     private List<Enemy> pooledEnemyComponents = new List<Enemy>();
     private Stack<int> availableEnemies = new Stack<int>();
 
-    private GameObject Player => GameplayManager.Get.Player.gameObject;
+    private GameObject Player => GameplayManager.Player.gameObject;
 
     public int enemyPoolSize = 100;
     private void Awake()
@@ -154,6 +154,11 @@ public class EnemyManager : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameplayManager.IsPaused)
+        {
+            return;
+        }
+
         for (int i = 0; i < pooledEnemies.Count; ++i)
         {
             if (!pooledEnemies[i].activeSelf || !pooledEnemyComponents[i].gameObject || !pooledEnemyComponents[i].isActive)
@@ -172,7 +177,7 @@ public class EnemyManager : MonoBehaviour
                 if (isWithinRange && isInLineOfSight)
                 {
                     enemy.weaponHolder.SetAimingDir(playerDir);
-                    enemy.weaponHolder.FireWeapon(0);
+                    enemy.weaponHolder.FireWeapon();
                 }
             }
 

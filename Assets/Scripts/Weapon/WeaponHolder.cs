@@ -4,9 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public struct WeaponDesc
+{
+    public int currentClipSize;
+    public Weapon weaponData;
+}
 public class WeaponHolder : MonoBehaviour
 {
-    private List<Weapon> weaponInventory = new List<Weapon>();
+    private List<string> weaponInventory = new List<string>();
     private List<int> weaponClipSizeReg = new List<int>();
 
     public Vector3 AimingDirection { get; private set; }
@@ -16,7 +21,7 @@ public class WeaponHolder : MonoBehaviour
 
     private void Awake()
     {
-        
+
     }
 
     private void OnEnable()
@@ -46,10 +51,17 @@ public class WeaponHolder : MonoBehaviour
         }
     }
 
-    public void FireWeapon(int weaponIndex)
+    public void FireWeapon()
     {
-        Debug.Log("Attempting to fire weapon!");
+        //Debug.Log("Attempting to fire weapon!");
         isFiring = true;
+    }
+
+    public void SelectWeapon(int weaponIndex)
+    {
+        if (weaponIndex < 0 || weaponIndex >= weaponInventory.Count)
+            return;
+
         selectedWeapon = weaponIndex;
     }
     private IEnumerator Fire(int weaponIndex)
@@ -59,24 +71,26 @@ public class WeaponHolder : MonoBehaviour
             yield break;
         }
 
-        Weapon weapon = weaponInventory[weaponIndex];
+        var weaponID = weaponInventory[weaponIndex];
+        var weapon = WeaponRegistry.GetWeapon(weaponID);
         int clipSize = weaponClipSizeReg[weaponIndex];
         clipSize--;
-        if (clipSize <= 0)
+        if (clipSize < 0)
         {
             yield return new WaitForSeconds(weapon.reloadTime);
-            clipSize = weapon.clipSize;
+            weaponClipSizeReg[weaponIndex] = weapon.clipSize;
+            yield break;
         }
         weaponClipSizeReg[weaponIndex] = clipSize;
-        weapon.onFireEvent(weapon, this);
+        weapon.OnFireEvent(this);
         yield return new WaitForSeconds(weapon.fireRate);
     }
 
     public void AddWeapon(string weaponID)
     {
         var index = weaponInventory.Count;
-        weaponInventory.Add(WeaponRegistry.GetWeapon(weaponID));
-        weaponClipSizeReg.Add(weaponInventory[index].clipSize);
+        weaponInventory.Add(weaponID);
+        weaponClipSizeReg.Add(WeaponRegistry.GetWeapon(weaponID).clipSize);
     }
 
 
@@ -95,5 +109,19 @@ public class WeaponHolder : MonoBehaviour
     private void Update()
     {
 
+    }
+
+    public List<string> GetWeaponInventory()
+    {
+        return weaponInventory;
+    }
+
+    internal WeaponDesc GetCurrentWeapon()
+    {
+        return new WeaponDesc
+        {
+            currentClipSize = weaponClipSizeReg[selectedWeapon],
+            weaponData = WeaponRegistry.GetWeapon(weaponInventory[selectedWeapon])
+        };
     }
 }

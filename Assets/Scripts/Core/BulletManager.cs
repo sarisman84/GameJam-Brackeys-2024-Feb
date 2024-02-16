@@ -36,7 +36,7 @@ public class BulletManager : MonoBehaviour
         GameObject[] loadedBulletModels = Resources.LoadAll<GameObject>("Bullets");
         for (int i = 0; i < loadedBulletModels.Length; ++i)
         {
-            loadedModels.Add(loadedBulletModels[i].name);
+            loadedModels.Add(loadedBulletModels[i].name.ToLower());
         }
         Get = this;
 
@@ -94,6 +94,11 @@ public class BulletManager : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameplayManager.IsPaused)
+        {
+            return;
+        }
+
         for (int i = 0; i < bulletPoolSize; ++i)
         {
             if (!pooledBullets[i].isReady)
