@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: R - Invert Corner [180]
   m_EditorClassIdentifier: 
   tileRotation: 180
-  tileWeight: 0
-  edgeTileWeight: 1.5
+  tileWeight: 0.5
+  edgeTileWeight: 0
   prefab: {fileID: 2973777051735806269, guid: 25209238ebd3f3c49b04c4051d0bf820, type: 3}
-  tag: 
+  tag: Exterior
   validTiles_North:
   - {fileID: 11400000, guid: 13d0bda52a0527c4091ebdb03a58ae6f, type: 2}
   - {fileID: 11400000, guid: 9ad58ca0afba40e4a819e6c10f208ccc, type: 2}

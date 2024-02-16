@@ -2,9 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
+using static LevelGenerator;
+using UnityEngine.UIElements;
 using Application = UnityEngine.Application;
 using Random = UnityEngine.Random;
 
@@ -14,18 +17,18 @@ public class LevelGenerator : MonoBehaviour
 {
     public struct Tile
     {
-        public int position;
+        public int presetIndex;
         public GameObject spawnedPrefab;
-        public List<int> superPosition;
+        public List<int> superPositionOfPresetIndicies;
     }
 
     public struct TilePreset
     {
         public int tileDataID;
-        public HashSet<int> validTiles_South;
-        public HashSet<int> validTiles_North;
-        public HashSet<int> validTiles_East;
-        public HashSet<int> validTiles_West;
+        public HashSet<int> validTileData_South;
+        public HashSet<int> validTileData_North;
+        public HashSet<int> validTileData_East;
+        public HashSet<int> validTileData_West;
     }
 
     private static LevelGenerator instance;
@@ -33,6 +36,10 @@ public class LevelGenerator : MonoBehaviour
 
     [Space()]
     public List<TileData> tileData;
+    [Header("Post Processing")]
+    public TileData postProcessTileData;
+    public string blacklistedTileTag;
+    public float middleAreaSizeFactor;
 
     private Tile[] grid;
     private Stack<Vector2Int> propagationStack = new Stack<Vector2Int>();
@@ -50,50 +57,40 @@ public class LevelGenerator : MonoBehaviour
         ParseTileData();
     }
 
-    private void Update()
-    {
-        //MORE TEST
-
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            GenerateNewLevel(new Vector2Int(5, 5), new Vector2Int(10, 10));
-        }
-    }
-
     private void ParseTileData()
     {
         for (int i = 0; i < tileData.Count; ++i)
         {
             var data = tileData[i];
             var tile = new TilePreset();
-            tile.validTiles_South = new HashSet<int>();
-            tile.validTiles_East = new HashSet<int>();
-            tile.validTiles_West = new HashSet<int>();
-            tile.validTiles_North = new HashSet<int>();
+            tile.validTileData_South = new HashSet<int>();
+            tile.validTileData_East = new HashSet<int>();
+            tile.validTileData_West = new HashSet<int>();
+            tile.validTileData_North = new HashSet<int>();
             tile.tileDataID = i;
 
             for (int j = 0; j < data.validTiles_South.Count; ++j)
             {
                 var validTile = data.validTiles_South[j];
-                tile.validTiles_South.Add(tileData.IndexOf(validTile));
+                tile.validTileData_South.Add(tileData.IndexOf(validTile));
             }
 
             for (int j = 0; j < data.validTiles_North.Count; ++j)
             {
                 var validTile = data.validTiles_North[j];
-                tile.validTiles_North.Add(tileData.IndexOf(validTile));
+                tile.validTileData_North.Add(tileData.IndexOf(validTile));
             }
 
             for (int j = 0; j < data.validTiles_East.Count; ++j)
             {
                 var validTile = data.validTiles_East[j];
-                tile.validTiles_East.Add(tileData.IndexOf(validTile));
+                tile.validTileData_East.Add(tileData.IndexOf(validTile));
             }
 
             for (int j = 0; j < data.validTiles_West.Count; ++j)
             {
                 var validTile = data.validTiles_West[j];
-                tile.validTiles_West.Add(tileData.IndexOf(validTile));
+                tile.validTileData_West.Add(tileData.IndexOf(validTile));
             }
 
             indexedTilePresets.Add(tile);
@@ -123,7 +120,12 @@ public class LevelGenerator : MonoBehaviour
 
     public static TileData GetTileData(Tile tile)
     {
-        return instance.tileData[instance.indexedTilePresets[tile.position].tileDataID];
+        return instance.tileData[instance.indexedTilePresets[tile.presetIndex].tileDataID];
+    }
+
+    public static TileData GetTileData(int index)
+    {
+        return GetTileData(instance.grid[index]);
     }
 
     public static Tile[] GetTileGrid()
@@ -147,7 +149,87 @@ public class LevelGenerator : MonoBehaviour
 #if UNITY_EDITOR
         Debug.Log("[Level Manager]: Wave Function Collapse: Complete!");
 #endif
+        yield return ApplyPostProcessing();
         onGenerationComplete?.Invoke(grid);
+    }
+
+    private IEnumerator ApplyPostProcessing()
+    {
+        for (int i = 0; i < grid.Length; ++i)
+        {
+            if (IsIndexInMiddle(i) && IsTileBlacklisted(i))
+            {
+                yield return ReplaceTileWithPPTile(i);
+            }
+        }
+    }
+
+    private IEnumerator ReplaceTileWithPPTile(int i)
+    {
+        if (grid[i].spawnedPrefab)
+        {
+            Destroy(grid[i].spawnedPrefab);
+        }
+
+        var coords = CoordsAt(i);
+        var position = TileToWorldCoordinates(coords);
+        grid[i].spawnedPrefab = Instantiate(postProcessTileData.prefab);
+#if UNITY_EDITOR
+        Debug.Log($"[Level Manager, Current Node {CoordsAt(i)}]: Spawned tile object at {position}!");
+#endif
+        if (!grid[i].spawnedPrefab)
+        {
+#if UNITY_EDITOR
+            Debug.LogWarning($"[Level Manager, Current Node {coords}]: Didnt create tile object!");
+#endif
+        }
+
+        Matrix4x4 matrix = Matrix4x4.TRS(transform.localPosition, transform.rotation, transform.localScale);
+        matrix = Matrix4x4.Rotate(Quaternion.Euler(0, postProcessTileData.tileRotation, 0)) * matrix;
+        matrix = Matrix4x4.Translate(position) * matrix;
+
+        grid[i].spawnedPrefab.transform.position = matrix.GetPosition();
+        grid[i].spawnedPrefab.transform.rotation = matrix.rotation;
+
+        grid[i].spawnedPrefab.transform.SetParent(transform);
+        grid[i].spawnedPrefab.name = $"[{coords}] {postProcessTileData.name}";
+
+        yield return null;
+
+
+    }
+
+    private bool IsTileBlacklisted(int i)
+    {
+        TileData data = GetTileData(i);
+
+        return data.tag.ToLower() == blacklistedTileTag.ToLower();
+    }
+
+    private bool IsIndexInMiddle(int i)
+    {
+        var coords = CoordsAt(i);
+
+        var middleY = (int)(gridHeight * middleAreaSizeFactor);
+        var middleX = (int)(gridWidth * middleAreaSizeFactor);
+
+        var yStart = (gridHeight - middleY) / 2;
+        var yEnd = yStart + middleY;
+        var xStart = (gridWidth - middleX) / 2;
+        var xEnd = xStart + middleX;
+
+        var isInMiddleRow = coords.y >= yStart && coords.y < yEnd;
+        var isInMiddleCol = coords.x >= xStart && coords.x < xEnd;
+
+        return isInMiddleCol && isInMiddleRow;
+    }
+
+    private Vector2Int CoordsAt(int i)
+    {
+        var result = new Vector2Int();
+        result.x = i % gridWidth;    // % is the "modulo operator", the remainder of i / width;
+        result.y = i / gridHeight;    // where "/" is an integer division
+        return result;
     }
 
     private IEnumerator ResetTileGrid()
@@ -161,13 +243,13 @@ public class LevelGenerator : MonoBehaviour
 
         for (int i = 0; i < grid.Length; ++i)
         {
-            grid[i].superPosition = new List<int>();
+            grid[i].superPositionOfPresetIndicies = new List<int>();
 
             for (int t = 0; t < tileData.Count; ++t)
             {
-                grid[i].superPosition.Add(t);
+                grid[i].superPositionOfPresetIndicies.Add(t);
             }
-            grid[i].position = -1;
+            grid[i].presetIndex = -1;
         }
 
 #if UNITY_EDITOR
@@ -204,20 +286,12 @@ public class LevelGenerator : MonoBehaviour
         while (propagationStack.Count > 0)
         {
             var curCoords = propagationStack.Pop();
-            //var curIndex = IndexAt(curCoords);
-            //var curSuperposition = grid[curIndex].superPosition;
-
-            //// If the current superposition is already collapsed or empty, no need to propagate from here.
-            //if (curSuperposition.Count <= 1)
-            //{
-            //    continue;
-            //}
 
             foreach (Vector2Int direction in ValidDirections(curCoords))
             {
                 var otherCoords = curCoords + direction;
                 var otherIndex = IndexAt(otherCoords);
-                var otherSuperposition = new List<int>(grid[otherIndex].superPosition);
+                var otherSuperposition = new List<int>(grid[otherIndex].superPositionOfPresetIndicies);
 
                 if (otherSuperposition.Count <= 1)
                 {
@@ -233,8 +307,8 @@ public class LevelGenerator : MonoBehaviour
                     if (!possibleNeighbourPositions.Contains(pos))
                     {
                         // If a position is not possible, remove it from the superposition
-                        grid[otherIndex].superPosition.Remove(pos);
-                        if (grid[otherIndex].superPosition.Count == 1)
+                        grid[otherIndex].superPositionOfPresetIndicies.Remove(pos);
+                        if (grid[otherIndex].superPositionOfPresetIndicies.Count == 1)
                         {
                             CollapseAt(otherCoords);
                         }
@@ -249,8 +323,6 @@ public class LevelGenerator : MonoBehaviour
                     }
 
                 }
-
-
             }
 
             // Optional delay to visualize propagation steps, remove if not needed.
@@ -266,12 +338,6 @@ public class LevelGenerator : MonoBehaviour
 
         yield return null;
     }
-
-    private bool IsPositionValid(int otherPosition, HashSet<int> possibleNeighbourPositions)
-    {
-        return possibleNeighbourPositions.Contains(otherPosition);
-    }
-
     private HashSet<int> GetPossibleNeighbours(Vector2Int curCoords, Vector2Int direction)
     {
         var index = IndexAt(curCoords);
@@ -285,12 +351,12 @@ public class LevelGenerator : MonoBehaviour
         }
 
         var result = new HashSet<int>();
-        var superPosition = grid[index].superPosition;
+        var superPosition = grid[index].superPositionOfPresetIndicies;
 
         // If the tile has collapsed to a single possibility, use that to determine the possible neighbours.
-        if (grid[index].position != -1)
+        if (grid[index].presetIndex != -1)
         {
-            var tileIndex = grid[index].position;
+            var tileIndex = grid[index].presetIndex;
             AppendDirectionalTiles(ref result, tileIndex, direction);
         }
         else
@@ -310,19 +376,19 @@ public class LevelGenerator : MonoBehaviour
     {
         if (direction.x > 0) // East
         {
-            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTiles_East);
+            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTileData_East);
         }
         else if (direction.x < 0) // West
         {
-            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTiles_West);
+            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTileData_West);
         }
         else if (direction.y > 0) // North
         {
-            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTiles_North);
+            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTileData_North);
         }
         else if (direction.y < 0) // South
         {
-            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTiles_South);
+            AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTileData_South);
         }
     }
 
@@ -365,7 +431,7 @@ public class LevelGenerator : MonoBehaviour
     private void CollapseAt(Vector2Int coords)
     {
         var index = IndexAt(coords);
-        var superPositions = grid[index].superPosition;
+        var superPositions = grid[index].superPositionOfPresetIndicies;
 
         // Calculate the total weight of all possible superPositions
         float totalWeight = 0f;
@@ -396,16 +462,16 @@ public class LevelGenerator : MonoBehaviour
 #if UNITY_EDITOR
             Debug.LogWarning("Failed to select a tile preset based on weight.");
 #endif
-            tilePresetIndex = grid[index].superPosition.ElementAt(Random.Range(0, grid[index].superPosition.Count));
+            tilePresetIndex = grid[index].superPositionOfPresetIndicies.ElementAt(Random.Range(0, grid[index].superPositionOfPresetIndicies.Count));
         }
 
-        grid[index].position = tilePresetIndex;
+        grid[index].presetIndex = tilePresetIndex;
         // Proceed with collapsing to the selected tile
-        grid[index].superPosition.Clear();
+        grid[index].superPositionOfPresetIndicies.Clear();
 #if UNITY_EDITOR
-        Debug.Log($"[Level Manager, Current Node {coords}]: {coords} got collapsed! [superPosition.Count = {grid[index].superPosition.Count}]");
+        Debug.Log($"[Level Manager, Current Node {coords}]: {coords} got collapsed! [superPosition.Count = {grid[index].superPositionOfPresetIndicies.Count}]");
 #endif
-        var tilePreset = tileData[grid[index].position];
+        var tilePreset = tileData[grid[index].presetIndex];
         var position = TileToWorldCoordinates(coords);
         grid[index].spawnedPrefab = Instantiate(tilePreset.prefab);
 #if UNITY_EDITOR
@@ -443,8 +509,8 @@ public class LevelGenerator : MonoBehaviour
     private void ForceCollapseAt(Vector2Int coords, int position)
     {
         var index = IndexAt(coords);
-        var tilePresetId = grid[index].superPosition.ElementAt(position);
-        grid[index].superPosition.Clear();
+        var tilePresetId = grid[index].superPositionOfPresetIndicies.ElementAt(position);
+        grid[index].superPositionOfPresetIndicies.Clear();
         var tilePreset = tileData[tilePresetId];
         grid[index].spawnedPrefab = Instantiate(tilePreset.prefab, TileToWorldCoordinates(coords), Quaternion.Euler(0, tilePreset.tileRotation, 0));
     }
@@ -452,7 +518,7 @@ public class LevelGenerator : MonoBehaviour
     private Vector2Int GetMinEntropyCoordinates()
     {
         var minIndex = Random.Range(0, grid.Length);
-        while (grid[minIndex].superPosition.Count <= 0)
+        while (grid[minIndex].superPositionOfPresetIndicies.Count <= 0)
         {
             minIndex = Random.Range(0, grid.Length);
         }
@@ -460,7 +526,7 @@ public class LevelGenerator : MonoBehaviour
         // Start with a random tile as the minimum
         for (int i = 0; i < grid.Length; ++i)
         {
-            if (grid[i].superPosition.Count < grid[minIndex].superPosition.Count && grid[i].superPosition.Count > 0)
+            if (grid[i].superPositionOfPresetIndicies.Count < grid[minIndex].superPositionOfPresetIndicies.Count && grid[i].superPositionOfPresetIndicies.Count > 0)
             {
                 minIndex = i; // Found a new minimum
             }
@@ -472,7 +538,7 @@ public class LevelGenerator : MonoBehaviour
     {
         for (int i = 0; i < grid.Length; ++i)
         {
-            if (grid[i].superPosition.Count > 0)
+            if (grid[i].superPositionOfPresetIndicies.Count > 0)
                 return false;
         }
         return true;
@@ -520,7 +586,7 @@ public class LevelGenerator : MonoBehaviour
 
         if (currentDebugSelectedTile)
         {
-            var anchorPos = Vector3.zero;
+            var anchorPos = transform.position;
             var anchorRot = currentDebugSelectedTile.tileRotation;
             if (currentDebugSelectedTile.prefab)
             {
@@ -543,7 +609,7 @@ public class LevelGenerator : MonoBehaviour
         if (direction == Vector2.zero)
             return;
         var scaleOffset = 0.25f;
-        var offset = new Vector3(direction.x * tileWidth, 0.0f, direction.y * tileHeight);
+        var offset = new Vector3(direction.x * GameplayManager.TileWidth, 0.0f, direction.y * GameplayManager.TileHeight);
         var targetList = GetTileSide(selectedTileData, direction);
 
         if (targetList == default)
@@ -554,12 +620,12 @@ public class LevelGenerator : MonoBehaviour
         {
             return;
         }
-        var subTileSize = new Vector3(tileWidth / subGridSize, 1, tileHeight / subGridSize); // Size of each subtile
+        var subTileSize = new Vector3(GameplayManager.TileWidth / subGridSize, 1, GameplayManager.TileHeight / subGridSize); // Size of each subtile
 
         for (int i = 0; i < targetList.Count; ++i)
         {
             var spCoords = new Vector2Int(i % subGridSize, i / subGridSize); // Position within the subgrid
-            var anchorPos = origin + offset + new Vector3(spCoords.x * subTileSize.x, 0, spCoords.y * subTileSize.z) - new Vector3(tileWidth * 0.5f - subTileSize.x * 0.5f, 0, tileHeight * 0.5f - subTileSize.z * 0.5f); // Adjust for tile centering
+            var anchorPos = origin + offset + new Vector3(spCoords.x * subTileSize.x, 0, spCoords.y * subTileSize.z) - new Vector3(GameplayManager.TileWidth * 0.5f - subTileSize.x * 0.5f, 0, GameplayManager.TileHeight * 0.5f - subTileSize.z * 0.5f); // Adjust for tile centering
             var anchorRot = targetList[i].tileRotation;
             RenderPrefab(targetList[i].prefab, anchorPos, anchorRot, Vector3.one * scaleOffset, Color.yellow);
             Gizmos.matrix = Matrix4x4.identity;
@@ -637,12 +703,12 @@ public class LevelGenerator : MonoBehaviour
 
     private void RenderSuperPositions(Vector2Int coords, Tile tile)
     {
-        if (tile.superPosition.Count > 0)
+        if (tile.superPositionOfPresetIndicies.Count > 0)
         {
             // Drawing superpositions as a subgrid
-            var subGridSize = Mathf.CeilToInt(Mathf.Sqrt(tile.superPosition.Count)); // Calculate size of the subgrid
+            var subGridSize = Mathf.CeilToInt(Mathf.Sqrt(tile.superPositionOfPresetIndicies.Count)); // Calculate size of the subgrid
             var subTileSize = new Vector3(tileWidth / subGridSize, 1, tileHeight / subGridSize); // Size of each subtile
-            for (int sp = 0; sp < tile.superPosition.Count; ++sp)
+            for (int sp = 0; sp < tile.superPositionOfPresetIndicies.Count; ++sp)
             {
                 var spCoords = new Vector2Int(sp % subGridSize, sp / subGridSize); // Position within the subgrid
                 var anchorPos = TileToWorldCoordinates(coords) + new Vector3(spCoords.x * subTileSize.x, 0, spCoords.y * subTileSize.z) - new Vector3(tileWidth * 0.5f - subTileSize.x * 0.5f, 0, tileHeight * 0.5f - subTileSize.z * 0.5f); // Adjust for tile centering
@@ -650,7 +716,7 @@ public class LevelGenerator : MonoBehaviour
 
                 if (tileD.prefab)
                 {
-                    float progress = (float)sp / (float)(tile.superPosition.Count - 1); // Normalize the current index
+                    float progress = (float)sp / (float)(tile.superPositionOfPresetIndicies.Count - 1); // Normalize the current index
                     Color gradientColor = Color.Lerp(Color.red * 0.7f, Color.cyan * 0.7f, progress); // Interpolate between dark red and dark blue
                     gradientColor.a = 1.0f;
                     RenderPrefab(tileD.prefab, anchorPos, tileD.tileRotation, Vector3.one * 0.15f, gradientColor);
@@ -665,7 +731,7 @@ public class LevelGenerator : MonoBehaviour
 
     private void ApplyColorToDebugTile(int i, int currentDebugNodeIndex, Tile tile)
     {
-        if (tile.superPosition.Count <= 0)
+        if (tile.superPositionOfPresetIndicies.Count <= 0)
         {
             Gizmos.color = Color.green;
         }

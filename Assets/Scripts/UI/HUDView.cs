@@ -61,9 +61,9 @@ public class HUDView : AbstractViewController
             .WaitForCompletion();
     }
 
-    internal override IEnumerator OnViewExit(UIView currentView)
+    internal override IEnumerator OnViewExit(UIView nextView)
     {
-        if (currentView == UIView.PauseMenu || currentView == UIView.WeaponSelect)
+        if (nextView == UIView.PauseMenu || nextView == UIView.WeaponSelect)
         {
             yield break;
         }
@@ -75,7 +75,8 @@ public class HUDView : AbstractViewController
     private void UpdateHealthBar()
     {
         var playerHeatlh = GameplayManager.Player.Health;
-        healthBar.DOValue(playerHeatlh.CurrentHealth, healthBarAnimDuration)
+        healthBar
+            .DOValue(playerHeatlh.CurrentHealth, healthBarAnimDuration)
             .SetEase(healthBarAnimEase);
 
         healthBarText.text = $"{playerHeatlh.CurrentHealth}/{playerHeatlh.maxHealth}";
@@ -87,6 +88,7 @@ public class HUDView : AbstractViewController
         var wh = GameplayManager.Player.WeaponHolder;
         var weapon = wh.GetCurrentWeapon();
         weaponAmmoIndicator.text = $"{weapon.currentClipSize}/{weapon.weaponData.clipSize}";
+        weaponIcon.sprite = weapon.weaponData.weaponIcon;
         yield return null;
     }
 }

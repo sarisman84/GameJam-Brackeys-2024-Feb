@@ -41,6 +41,7 @@ public class PlayerController : MonoBehaviour
 
         Health.onDeathEvent += PlayerDeath;
         WeaponHolder.AddWeapon("gun");
+        WeaponHolder.AddWeapon("enemy_gun");
 
         characterController = GetComponent<CharacterController>();
         inputActions.FindAction("move").performed += OnMovePerformed;
@@ -54,15 +55,15 @@ public class PlayerController : MonoBehaviour
 
     private void OnWeaponSelectCanceled(InputAction.CallbackContext context)
     {
-        lastKnownView = UIManager.CurrentView;
-        UIManager.SetCurrentViewTo(UIManager.UIView.WeaponSelect);
-        var weaponSelectView = UIManager.GetView<WeaponSelectView>(UIManager.UIView.WeaponSelect);
-        weaponSelectView.PopulateWeaponWheel(WeaponHolder.GetWeaponInventory());
+        UIManager.SetCurrentViewTo(lastKnownView);
     }
 
     private void OnWeaponSelectPerformed(InputAction.CallbackContext context)
     {
-        UIManager.SetCurrentViewTo(lastKnownView);
+        lastKnownView = UIManager.CurrentView;
+        UIManager.SetCurrentViewTo(UIManager.UIView.WeaponSelect);
+        var weaponSelectView = UIManager.GetView<WeaponSelectView>(UIManager.UIView.WeaponSelect);
+        weaponSelectView.PopulateWeaponWheel(WeaponHolder.GetWeaponInventory());
     }
 
     private void PlayerDeath(GameObject self)

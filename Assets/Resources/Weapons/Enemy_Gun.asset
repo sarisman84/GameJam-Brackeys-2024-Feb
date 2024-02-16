@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fireRate: 0.5
   fireLifetime: 5
-  fireVelocity: 15
+  fireVelocity: 5
   damage: 1
   clipSize: 5
   reloadTime: 0.8

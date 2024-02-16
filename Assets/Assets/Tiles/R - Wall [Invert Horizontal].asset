@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: R - Wall [Invert Horizontal]
   m_EditorClassIdentifier: 
   tileRotation: 180
-  tileWeight: 0
-  edgeTileWeight: 1.5
+  tileWeight: 0.1
+  edgeTileWeight: 0.01
   prefab: {fileID: 4342920491027708246, guid: 50c4214b28f59d34a98f91effa29af4f, type: 3}
-  tag: 
+  tag: Exterior
   validTiles_North:
   - {fileID: 11400000, guid: 5370e372bebae984a9eed9a6f1185c1d, type: 2}
   validTiles_South:

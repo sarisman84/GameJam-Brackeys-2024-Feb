@@ -56,16 +56,28 @@ public class GameplayManager : MonoBehaviour
     private Difficulty NextDifficulty => difficultyList[Mathf.Clamp(currentDifficulty + 1, currentDifficulty + 1, difficultyList.Count - 1)];
 
     private bool pauseFlag = false;
-    private static GameplayManager ins;
+    private static GameplayManager _ins;
+    private static GameplayManager ins
+    {
+        get
+        {
+            if (!_ins)
+                _ins = FindObjectOfType<GameplayManager>();
+            return _ins;
+        }
+    }
     private int playerSpawnTileIndex;
 
     public static PlayerController Player { get; private set; }
     public static GameObject Goal { get; private set; }
     public static bool IsPaused => ins.pauseFlag;
+    public static int TileWidth => ins.tileSize.x;
+    public static int TileHeight => ins.tileSize.y;
+
 
     private void Awake()
     {
-        ins = this;
+        _ins = this;
         currentDifficulty = 0;
         stateMachine = new StateMachine<RuntimeState>(new Dictionary<RuntimeState, Func<NextState<RuntimeState>>>()
         {
@@ -108,7 +120,7 @@ public class GameplayManager : MonoBehaviour
 
     private NextState<RuntimeState> OnRuntimeCreateLevel()
     {
-
+        BulletManager.Get.UnloadAllBullets();
         return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, null);
     }
 
@@ -121,6 +133,8 @@ public class GameplayManager : MonoBehaviour
 
     private NextState<RuntimeState> OnRuntimeStartCreateLevel()
     {
+        BulletManager.Get.UnloadAllBullets();
+        EnemyManager.KillAllSpawnedEnemies();
         UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
         return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, RevivePlayer());
     }
@@ -266,6 +280,14 @@ public class GameplayManager : MonoBehaviour
     {
         ins.pauseFlag = false;
         AudioListener.pause = false;
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            stateMachine.SetState(RuntimeState.StartGame);
+        }
     }
 }
 

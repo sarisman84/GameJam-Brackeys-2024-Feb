@@ -19,8 +19,8 @@ public abstract class AbstractViewController : MonoBehaviour
         yield return OnViewExit(type);
     }
 
-    internal abstract IEnumerator OnViewEnter(UIView currentView);
-    internal abstract IEnumerator OnViewExit(UIView currentView);
+    internal abstract IEnumerator OnViewEnter(UIView oldView);
+    internal abstract IEnumerator OnViewExit(UIView nextView);
     internal abstract IEnumerator OnViewUpdate();
 
 

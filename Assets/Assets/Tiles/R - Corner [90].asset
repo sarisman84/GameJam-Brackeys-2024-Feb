@@ -16,7 +16,7 @@ MonoBehaviour:
   tileWeight: 0
   edgeTileWeight: 1.5
   prefab: {fileID: 9181767363509125599, guid: 286566604c777054a9117c16a5abbe5b, type: 3}
-  tag: 
+  tag: Exterior
   validTiles_North:
   - {fileID: 11400000, guid: 9ad58ca0afba40e4a819e6c10f208ccc, type: 2}
   - {fileID: 11400000, guid: 7648647ba421cb64dbf89b547a00ab8e, type: 2}

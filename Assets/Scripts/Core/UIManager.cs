@@ -78,10 +78,11 @@ public class UIManager : MonoBehaviour
         if (currentView != nextView)
         {
             if (registeredViews.ContainsKey(currentView))
-                yield return registeredViews[currentView].OnViewExit(currentView);
+                yield return registeredViews[currentView].OnViewExit(nextView);
             currentView = nextView;
+            var oldView = currentView;
             if (registeredViews.ContainsKey(currentView))
-                yield return registeredViews[currentView].OnViewEnter(currentView);
+                yield return registeredViews[currentView].OnViewEnter(oldView);
             yield break;
         }
 

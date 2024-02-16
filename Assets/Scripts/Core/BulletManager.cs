@@ -29,16 +29,23 @@ public class BulletManager : MonoBehaviour
     private Stack<int> availableBullets = new Stack<int>();
     public int bulletPoolSize = 1000;
     public LayerMask bulletCollisionMask;
-    public static BulletManager Get { get; private set; }
+    private static BulletManager ins;
+    public static BulletManager Get
+    {
+        get
+        {
+            if (!ins)
+                ins = FindAnyObjectByType<BulletManager>();
+            return ins;
+        }
+    }
     private void Awake()
     {
-
         GameObject[] loadedBulletModels = Resources.LoadAll<GameObject>("Bullets");
         for (int i = 0; i < loadedBulletModels.Length; ++i)
         {
             loadedModels.Add(loadedBulletModels[i].name.ToLower());
         }
-        Get = this;
 
         for (int i = 0; i < bulletPoolSize; ++i)
         {
@@ -90,6 +97,15 @@ public class BulletManager : MonoBehaviour
         bullet.isReady = true;
 
         pooledBullets[index] = bullet;
+    }
+
+    public void UnloadAllBullets()
+    {
+        for (int i = 0; i < pooledBullets.Count; i++)
+        {
+            DisableBullet(pooledBullets[i]);
+            availableBullets.Push(i);
+        }
     }
 
     private void FixedUpdate()
