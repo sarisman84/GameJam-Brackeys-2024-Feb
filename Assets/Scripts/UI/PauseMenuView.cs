@@ -1,24 +1,47 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public class PauseMenuView : AbstractViewController
 {
-    internal override IEnumerator OnViewEnter(UIManager.UIView currentView)
+    public Button resumeButton, settingsButton, quitButton;
+
+    protected override void Awake()
     {
-        //throw new System.NotImplementedException();
+        base.Awake();
+        resumeButton.onClick.AddListener(ResumeGame);
+        settingsButton.onClick.AddListener(OpenSettings);
+        quitButton.onClick.AddListener(GotoMainMenu);
+    }
+
+    protected override IEnumerator OnViewEnter(UIManager.UIView oldView)
+    {
+        GameplayManager.PauseGame();
         yield return null;
     }
 
-    internal override IEnumerator OnViewExit(UIManager.UIView currentView)
+    protected override IEnumerator OnViewExit(UIManager.UIView nextView)
     {
-        //throw new System.NotImplementedException();
+        GameplayManager.UnpauseGame();
         yield return null;
     }
 
-    internal override IEnumerator OnViewUpdate()
+    private void GotoMainMenu()
     {
-        //throw new System.NotImplementedException();
-        yield return null;
+        GameplayManager.SetGameplayState(RuntimeState.GotoPreRuntime);
+    }
+
+    private void OpenSettings()
+    {
+
+    }
+
+    private void ResumeGame()
+    {
+        GameplayManager.UnpauseGame();
+        UIManager.BacktrackToOldView();
+        GameplayManager.Player.pauseToggleInput = false;
     }
 }

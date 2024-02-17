@@ -37,6 +37,7 @@ public class EnemyManager : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        DontDestroyOnLoad(instance);
         GameObject[] _loadedEnemies = Resources.LoadAll<GameObject>("Enemies");
         for (int i = 0; i < _loadedEnemies.Length; ++i)
         {

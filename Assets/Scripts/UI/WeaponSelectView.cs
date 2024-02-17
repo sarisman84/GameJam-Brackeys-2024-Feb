@@ -15,12 +15,6 @@ public class WeaponSelectView : AbstractViewController
     public int weaponWheelSlotAmm = 6;
     public float weaponWheelRadius = 1.0f;
     public Transform weaponWheelParent;
-    public CanvasGroup viewGroup;
-
-    public float transitionInDuration = 0.25f;
-    public Ease transitionInEase;
-    public float transitionOutDuration = 0.25f;
-    public Ease transitionOutEase;
 
     private List<string> currentWeaponsToDisplay = new List<string>();
     private List<WeaponSelectSlot> spawnedElements = new List<WeaponSelectSlot>();
@@ -55,12 +49,8 @@ public class WeaponSelectView : AbstractViewController
 
     }
 
-    internal override IEnumerator OnViewEnter(UIManager.UIView currentView)
+    protected override IEnumerator OnViewEnter(UIManager.UIView currentView)
     {
-        var tween = viewGroup
-            .DOFade(1.0f, transitionInDuration)
-            .SetEase(transitionInEase);
-
         for (int i = 0; i < weaponWheelSlotAmm; i++)
         {
             WeaponSelectSlot slot = spawnedElements[i];
@@ -85,8 +75,7 @@ public class WeaponSelectView : AbstractViewController
             };
         }
         selectText.text = string.Empty;
-
-        yield return tween.WaitForCompletion();
+        yield return null;
     }
 
 
@@ -97,29 +86,21 @@ public class WeaponSelectView : AbstractViewController
         weaponHolder.SelectWeapon(newWeapon);
     }
 
-    internal override IEnumerator OnViewExit(UIManager.UIView currentView)
+    protected override IEnumerator OnViewExit(UIManager.UIView currentView)
     {
         foreach (var slot in spawnedElements)
         {
             slot.ResetSlot();
         }
-        var tween = viewGroup
-            .DOFade(0.0f, transitionOutDuration)
-            .SetEase(transitionOutEase);
 
         if (weaponToSelect != -1)
             SelectWeapon(weaponToSelect);
-        yield return tween.WaitForCompletion();
+        yield return null;
     }
 
     internal void PopulateWeaponWheel(List<string> weapons)
     {
         currentWeaponsToDisplay = weapons;
-    }
-
-    internal override IEnumerator OnViewUpdate()
-    {
-        yield return null;
     }
 
     void OnDrawGizmos()

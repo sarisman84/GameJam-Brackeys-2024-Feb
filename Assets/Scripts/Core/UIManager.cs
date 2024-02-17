@@ -24,17 +24,31 @@ public class UIManager : MonoBehaviour
         None
     }
 
-    private static UIManager Instance { get; set; }
+    private static UIManager _ins;
+    private static UIManager Instance
+    {
+        get
+        {
+            if (!_ins)
+            {
+                _ins = FindObjectOfType<UIManager>();
+                DontDestroyOnLoad(_ins);
+            }
+
+            return _ins;
+        }
+    }
     private Dictionary<UIView, AbstractViewController> registeredViews = new Dictionary<UIView, AbstractViewController>();
     private UIView currentView;
     private UIView nextView;
+    private UIView oldView;
     private bool runUIViewUpdates;
+    private bool skipExiting;
 
     public static UIView CurrentView => Instance.currentView;
 
     private void Awake()
     {
-        Instance = this;
         runUIViewUpdates = true;
         nextView = currentView;
     }
@@ -49,12 +63,19 @@ public class UIManager : MonoBehaviour
         StopCoroutine(UpdateUIViews());
     }
 
+    public static void BacktrackToOldView()
+    {
+        if (!Instance) return;
 
-    public static void SetCurrentViewTo(UIView newView)
+        Instance.nextView = Instance.oldView;
+    }
+
+    public static void SetCurrentViewTo(UIView newView, bool skipExitingOldView = false)
     {
         if (!Instance) return;
 
         Instance.nextView = newView;
+        Instance.skipExiting = skipExitingOldView;
     }
 
     public static T GetView<T>(UIView view) where T : AbstractViewController
@@ -77,13 +98,15 @@ public class UIManager : MonoBehaviour
 
         if (currentView != nextView)
         {
-            if (registeredViews.ContainsKey(currentView))
-                yield return registeredViews[currentView].OnViewExit(nextView);
+            if (registeredViews.ContainsKey(currentView) && !skipExiting)
+                yield return registeredViews[currentView].ViewExit(nextView);
+            var ov = currentView;
+            if (registeredViews.ContainsKey(nextView))
+                yield return registeredViews[nextView].ViewEnter(ov);
+
+
+            oldView = currentView;
             currentView = nextView;
-            var oldView = currentView;
-            if (registeredViews.ContainsKey(currentView))
-                yield return registeredViews[currentView].OnViewEnter(oldView);
-            yield break;
         }
 
         if (registeredViews.ContainsKey(currentView))
@@ -94,6 +117,11 @@ public class UIManager : MonoBehaviour
     {
         yield return new WaitUntil(() => Instance);
         Instance.registeredViews.Add(type, abstractViewController);
+    }
+
+    internal static IEnumerator WaitUntilViewChanged()
+    {
+        return new WaitUntil(() => CurrentView == Instance.nextView);
     }
 }
 

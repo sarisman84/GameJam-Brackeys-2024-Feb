@@ -10,11 +10,6 @@ using static UIManager;
 [RequireComponent(typeof(CanvasGroup))]
 public class HUDView : AbstractViewController
 {
-    [Header("View")]
-    public Ease transitionEnterEase;
-    public float transitionEnterDuration;
-    public Ease transitionExitEase;
-    public float transitionExitDuration;
     [Header("Health")]
     public Slider healthBar;
     public TextMeshProUGUI healthBarText;
@@ -48,28 +43,30 @@ public class HUDView : AbstractViewController
 
 
 
-    internal override IEnumerator OnViewEnter(UIView currentView)
+    protected override IEnumerator OnViewEnter(UIView currentView)
     {
         if (currentView == UIView.PauseMenu || currentView == UIView.WeaponSelect)
         {
+            interruptDefaultTransition = true;
             yield break;
         }
 
         UpdateHealthBar();
-        yield return viewAlpha.DOFade(1.0f, transitionEnterDuration)
-            .SetEase(transitionEnterEase)
-            .WaitForCompletion();
+        //yield return viewAlpha.DOFade(1.0f, transitionEnterDuration)
+        //    .SetEase(transitionEnterEase)
+        //    .WaitForCompletion();
     }
 
-    internal override IEnumerator OnViewExit(UIView nextView)
+    protected override IEnumerator OnViewExit(UIView nextView)
     {
         if (nextView == UIView.PauseMenu || nextView == UIView.WeaponSelect)
         {
+            interruptDefaultTransition = true;
             yield break;
         }
-        yield return viewAlpha.DOFade(0.0f, transitionExitDuration)
-            .SetEase(transitionExitEase)
-            .WaitForCompletion();
+        //yield return viewAlpha.DOFade(0.0f, transitionExitDuration)
+        //    .SetEase(transitionExitEase)
+        //    .WaitForCompletion();
     }
 
     private void UpdateHealthBar()
@@ -82,7 +79,7 @@ public class HUDView : AbstractViewController
         healthBarText.text = $"{playerHeatlh.CurrentHealth}/{playerHeatlh.maxHealth}";
     }
 
-    internal override IEnumerator OnViewUpdate()
+    public override IEnumerator OnViewUpdate()
     {
         yield return new WaitUntil(() => GameplayManager.Player);
         var wh = GameplayManager.Player.WeaponHolder;

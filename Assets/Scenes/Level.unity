@@ -654,7 +654,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9ad58ca0afba40e4a819e6c10f208ccc, type: 2}
   postProcessTileData: {fileID: 11400000, guid: 530ee6576886472488f98b189cf615a8, type: 2}
   blacklistedTileTag: Exterior
-  middleAreaSizeFactor: 0.8
+  middleAreaSizeFactor: 0.6
 --- !u!1001 &1046935610827508791
 PrefabInstance:
   m_ObjectHideFlags: 0

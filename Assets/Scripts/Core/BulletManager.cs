@@ -35,7 +35,11 @@ public class BulletManager : MonoBehaviour
         get
         {
             if (!ins)
+            {
                 ins = FindAnyObjectByType<BulletManager>();
+                DontDestroyOnLoad(ins);
+            }
+
             return ins;
         }
     }

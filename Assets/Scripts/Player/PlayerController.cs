@@ -1,12 +1,6 @@
 using Cinemachine;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
-using static UnityEditor.Timeline.TimelinePlaybackControls;
 
 [RequireComponent(typeof(CharacterController), typeof(WeaponHolder), typeof(Health))]
 public class PlayerController : MonoBehaviour
@@ -29,6 +23,7 @@ public class PlayerController : MonoBehaviour
     private Health healthComponent;
 
     private UIManager.UIView lastKnownView;
+    public bool pauseToggleInput { get; set; }
 
 
 
@@ -51,6 +46,21 @@ public class PlayerController : MonoBehaviour
         inputActions.FindAction("aim").performed += OnAimPerformed;
         inputActions.FindAction("weapon_select").performed += OnWeaponSelectPerformed;
         inputActions.FindAction("weapon_select").canceled += OnWeaponSelectCanceled;
+        inputActions.FindAction("pause").performed += OnPausePerformed;
+    }
+    private void OnPausePerformed(InputAction.CallbackContext context)
+    {
+        pauseToggleInput = !pauseToggleInput;
+        if (pauseToggleInput)
+        {
+
+            UIManager.SetCurrentViewTo(UIManager.UIView.PauseMenu);
+        }
+        else
+        {
+
+            UIManager.SetCurrentViewTo(lastKnownView);
+        }
     }
 
     private void OnWeaponSelectCanceled(InputAction.CallbackContext context)
@@ -69,6 +79,7 @@ public class PlayerController : MonoBehaviour
     private void PlayerDeath(GameObject self)
     {
         SetActive(false);
+        GameplayManager.SetGameplayState(RuntimeState.GotoLevelOver);
     }
 
     private void OnAimPerformed(InputAction.CallbackContext context)

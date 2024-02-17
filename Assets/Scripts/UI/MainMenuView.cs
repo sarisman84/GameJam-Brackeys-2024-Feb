@@ -1,25 +1,39 @@
-﻿using System.Collections;
+﻿using DG.Tweening;
+using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 using static UIManager;
 
 
 public class MainMenuView : AbstractViewController
 {
-    internal override IEnumerator OnViewEnter(UIView currentView)
+    public Button playButton, settingsButton;
+
+    protected override void Awake()
     {
-        //throw new System.NotImplementedException();
+        base.Awake();
+        playButton.onClick.AddListener(PlayGame);
+        settingsButton.onClick.AddListener(OpenSettings);
+    }
+
+    protected override IEnumerator OnViewEnter(UIView oldView)
+    {
         yield return null;
     }
 
-    internal override IEnumerator OnViewExit(UIView currentView)
+    protected override IEnumerator OnViewExit(UIView nextView)
     {
-        //throw new System.NotImplementedException();
         yield return null;
     }
 
-    internal override IEnumerator OnViewUpdate()
+    private void OpenSettings()
     {
-        //throw new System.NotImplementedException();
-        yield return null;
+
+    }
+
+    private void PlayGame()
+    {
+        GameplayManager.SetGameplayState(RuntimeState.StartGame);
     }
 }

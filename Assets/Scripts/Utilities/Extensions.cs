@@ -36,6 +36,27 @@ public static class Extensions
     {
         return cam.GetComponent<CinemachineBrain>().ActiveVirtualCamera as CinemachineVirtualCamera;
     }
+
+    public static Sequence DOTransform(this Transform owner, Vector3 position, Vector3 rotationEuler, Vector3 scale, float duration)
+    {
+        var transform = DOTween.Sequence();
+        transform.Insert(0, owner.DOMove(position, duration));
+        transform.Insert(0, owner.DORotate(rotationEuler, duration));
+        transform.Insert(0, owner.DOScale(scale, duration));
+        return transform;
+
+    }
+
+
+    public static Sequence DORectTransform(this RectTransform owner, Vector2 position, Vector3 rotationEuler, Vector3 scale, float duration)
+    {
+        var transform = DOTween.Sequence();
+        transform.Insert(0, owner.DOAnchorPos(position, duration));
+        transform.Insert(0, owner.DORotate(rotationEuler, duration));
+        transform.Insert(0, owner.DOSizeDelta(scale, duration));
+        return transform;
+
+    }
 }
 
 

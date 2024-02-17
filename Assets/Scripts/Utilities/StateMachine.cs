@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class NextState<TEnum> where TEnum : Enum
 {
@@ -24,6 +25,8 @@ public class StateMachine<TEnum> where TEnum : Enum
     private Dictionary<TEnum, Func<NextState<TEnum>>> stateMachine;
     private TEnum currentState;
     private bool runStateMachine;
+    private Coroutine routine;
+    private MonoBehaviour owner;
 
     public TEnum CurrentState => currentState;
     public NextState<TEnum> GetEvent(TEnum state) => stateMachine[state]();
@@ -37,19 +40,27 @@ public class StateMachine<TEnum> where TEnum : Enum
 
     public void Start(MonoBehaviour owner)
     {
+        this.owner = owner;
         runStateMachine = true;
-        owner.StartCoroutine(Update());
+        routine = this.owner.StartCoroutine(Update());
     }
 
     public void Stop(MonoBehaviour owner)
     {
+        this.owner = owner;
         runStateMachine = false;
-        owner.StopCoroutine(Update());
+        this.owner.StopCoroutine(routine);
     }
 
     public void SetState(TEnum newState)
     {
         currentState = newState;
+        if (routine != null)
+        {
+            owner.StopCoroutine(routine);
+            routine = null;
+        }
+        routine = owner.StartCoroutine(Update());
     }
 
     private IEnumerator Update()
@@ -58,6 +69,7 @@ public class StateMachine<TEnum> where TEnum : Enum
         {
             if (!stateMachine.ContainsKey(currentState))
             {
+                Debug.LogWarning("Could not find state! Exiting!");
                 runStateMachine = false;
                 yield break;
             }
@@ -67,6 +79,8 @@ public class StateMachine<TEnum> where TEnum : Enum
             currentState = result.nextState;
             yield return result.yieldCommand;
         }
+
+        Debug.LogError("LOOP EXITED!");
 
     }
 }

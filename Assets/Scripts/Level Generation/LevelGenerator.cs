@@ -33,6 +33,16 @@ public class LevelGenerator : MonoBehaviour
 
     private static LevelGenerator instance;
 
+    private static LevelGenerator ins
+    {
+        get
+        {
+            if (!instance)
+                instance = FindObjectOfType<LevelGenerator>();
+            return instance;
+        }
+    }
+
 
     [Space()]
     public List<TileData> tileData;
@@ -53,7 +63,6 @@ public class LevelGenerator : MonoBehaviour
     private int tileHeight;
     private void Awake()
     {
-        instance = this;
         ParseTileData();
     }
 
@@ -104,33 +113,33 @@ public class LevelGenerator : MonoBehaviour
 
     public static void GenerateNewLevel(Vector2Int gridSize, Vector2Int tileSize, Action<Tile[]> onGenerationComplete = null)
     {
-        instance.StartCoroutine(instance._GenerateNewLevel(gridSize, tileSize, onGenerationComplete));
+        ins.StartCoroutine(ins._GenerateNewLevel(gridSize, tileSize, onGenerationComplete));
     }
 
 
     public static IEnumerator ClearGeneratedWorld()
     {
-        return instance.ClearTileGrid();
+        return ins.ClearTileGrid();
     }
 
     public static IEnumerator GenerateNewLevelAsync(Vector2Int gridSize, Vector2Int tileSize)
     {
-        yield return instance._GenerateNewLevel(gridSize, tileSize, null);
+        yield return ins._GenerateNewLevel(gridSize, tileSize, null);
     }
 
     public static TileData GetTileData(Tile tile)
     {
-        return instance.tileData[instance.indexedTilePresets[tile.presetIndex].tileDataID];
+        return ins.tileData[ins.indexedTilePresets[tile.presetIndex].tileDataID];
     }
 
     public static TileData GetTileData(int index)
     {
-        return GetTileData(instance.grid[index]);
+        return GetTileData(ins.grid[index]);
     }
 
     public static Tile[] GetTileGrid()
     {
-        return instance.grid;
+        return ins.grid;
     }
 
     private IEnumerator _GenerateNewLevel(Vector2Int gridSize, Vector2Int tileSize, Action<Tile[]> onGenerationComplete)
@@ -808,5 +817,9 @@ public class LevelGenerator : MonoBehaviour
     }
 
 #endif
+    public static bool IsWorldLoaded()
+    {
+        return ins.grid != null && ins.grid.Length > 0;
+    }
 }
 

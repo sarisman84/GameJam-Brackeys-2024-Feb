@@ -9,16 +9,17 @@ using Random = UnityEngine.Random;
 
 public enum RuntimeState
 {
-    Intro,
-    MainMenu,
+    InitIntoPreRuntime,
+    PreRuntime,
     StartGame,
     GeneratingWorld,
     PostWorldGeneration,
-    LevelStart,
+    GotoLevelRuntime,
     LevelRuntime,
     LevelComplete,
+    GotoLevelOver,
     LevelOver,
-    Paused
+    GotoPreRuntime
 }
 
 
@@ -48,12 +49,16 @@ public class GameplayManager : MonoBehaviour
     public GameObject goalPrefab;
     public Vector2Int tileSize;
     public List<Difficulty> difficultyList = new List<Difficulty>();
+    public int difficultyRate = 50;
 
+    private int currentScore;
+    private float currentDifficultyRate;
     private int currentDifficulty;
+    private int nextDifficulty;
+    private int previousDifficulty;
 
     private StateMachine<RuntimeState> stateMachine;
-    private Difficulty CurrentDifficulty => difficultyList[currentDifficulty];
-    private Difficulty NextDifficulty => difficultyList[Mathf.Clamp(currentDifficulty + 1, currentDifficulty + 1, difficultyList.Count - 1)];
+    private Difficulty CurrentDifficulty => difficultyList[GetDifficulty(currentDifficultyRate)];
 
     private bool pauseFlag = false;
     private static GameplayManager _ins;
@@ -62,7 +67,11 @@ public class GameplayManager : MonoBehaviour
         get
         {
             if (!_ins)
+            {
                 _ins = FindObjectOfType<GameplayManager>();
+                DontDestroyOnLoad(_ins);
+            }
+              
             return _ins;
         }
     }
@@ -74,30 +83,87 @@ public class GameplayManager : MonoBehaviour
     public static int TileWidth => ins.tileSize.x;
     public static int TileHeight => ins.tileSize.y;
 
+    public static int CurrentScore
+    {
+        get => ins.currentScore;
+        set => ins.currentScore = value;
+    }
+
 
     private void Awake()
     {
         _ins = this;
+        currentDifficultyRate = 0;
         currentDifficulty = 0;
         stateMachine = new StateMachine<RuntimeState>(new Dictionary<RuntimeState, Func<NextState<RuntimeState>>>()
         {
+            { RuntimeState.InitIntoPreRuntime, InitGame},
+            { RuntimeState.PreRuntime, Idle },
             { RuntimeState.StartGame, OnRuntimeStartCreateLevel },
             { RuntimeState.LevelComplete, OnRuntimeCreateLevel },
             { RuntimeState.GeneratingWorld, GenerateWorld },
             { RuntimeState.PostWorldGeneration, SetWorldSettings },
-            { RuntimeState.LevelStart, StartLevelRuntime },
+            { RuntimeState.GotoLevelRuntime, StartLevelRuntime },
             { RuntimeState.LevelRuntime, UpdateLevel },
-            { RuntimeState.LevelOver, GameOver }
-        }, RuntimeState.StartGame);
+            { RuntimeState.GotoLevelOver, GotoGameOver },
+            { RuntimeState.LevelOver, OnGameOverState }
+        }, RuntimeState.InitIntoPreRuntime);
 
 
     }
-
-    private NextState<RuntimeState> GameOver()
+    private int GetDifficulty(float currentDifficultyRate)
     {
-        var result = LevelGenerator.ClearGeneratedWorld();
+        previousDifficulty = currentDifficulty;
+        nextDifficulty = Mathf.Clamp(currentDifficulty + 1, currentDifficulty + 1, difficultyList.Count - 1);
+        if (difficultyList[nextDifficulty].minDifficultyRate >= currentDifficultyRate)
+        {
+            currentDifficulty = nextDifficulty;
+        }
+        return currentDifficulty;
+    }
+
+    private NextState<RuntimeState> OnGameOverState()
+    {
+        UIManager.SetCurrentViewTo(UIManager.UIView.GameOver);
+        return new NextState<RuntimeState>(RuntimeState.LevelOver, null);
+    }
+
+    private NextState<RuntimeState> Idle()
+    {
+
+        UIManager.SetCurrentViewTo(UIManager.UIView.MainMenu);
+        return new NextState<RuntimeState>(RuntimeState.PreRuntime, IdleUpdate());
+    }
+
+    private IEnumerator IdleUpdate()
+    {
+        yield return new WaitUntil(() => AudioManager.HasInitialized);
+        AudioManager.Play("main_menu", true);
+        if (LevelGenerator.IsWorldLoaded())
+            yield return LevelGenerator.ClearGeneratedWorld();
+    }
+
+    private NextState<RuntimeState> InitGame()
+    {
+        return new NextState<RuntimeState>(RuntimeState.PreRuntime, WaitForInit());
+    }
+
+    private IEnumerator WaitForInit()
+    {
+        yield return new WaitUntil(() => Player);
+        PauseGame();
+        Player.SetActive(false);
+        yield return new WaitUntil(() => UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen));
+        UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen, true);
+        UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen).SetTransitionText("");
+        yield return UIManager.WaitUntilViewChanged();
+    }
+
+    private NextState<RuntimeState> GotoGameOver()
+    {
         EnemyManager.KillAllSpawnedEnemies();
-        return new NextState<RuntimeState>(RuntimeState.MainMenu, result);
+        BulletManager.Get.UnloadAllBullets();
+        return new NextState<RuntimeState>(RuntimeState.LevelOver, null);
     }
 
     private NextState<RuntimeState> UpdateLevel()
@@ -110,7 +176,7 @@ public class GameplayManager : MonoBehaviour
         }
         else if (Player.Health.HasDied)
         {
-            nextState = RuntimeState.LevelOver;
+            nextState = RuntimeState.GotoLevelOver;
         }
 
 
@@ -120,12 +186,20 @@ public class GameplayManager : MonoBehaviour
 
     private NextState<RuntimeState> OnRuntimeCreateLevel()
     {
+        nextDifficulty += difficultyRate;
         BulletManager.Get.UnloadAllBullets();
-        return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, null);
+        UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
+        var msg = previousDifficulty != currentDifficulty ?
+            "Escalating Difficulty" :
+            "Continuing Simulation";
+        UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen).SetTransitionText(msg);
+        return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, UIManager.WaitUntilViewChanged());
     }
 
     private NextState<RuntimeState> StartLevelRuntime()
     {
+        UnpauseGame();
+        Player.SetActive(true);
         EnemyManager.SetAliveEnemyStates(true);
         UIManager.SetCurrentViewTo(UIManager.UIView.HUD);
         return new NextState<RuntimeState>(RuntimeState.LevelRuntime, null);
@@ -133,9 +207,12 @@ public class GameplayManager : MonoBehaviour
 
     private NextState<RuntimeState> OnRuntimeStartCreateLevel()
     {
+        AudioManager.Stop("main_menu");
+
         BulletManager.Get.UnloadAllBullets();
         EnemyManager.KillAllSpawnedEnemies();
         UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
+        UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen).SetTransitionText("Starting Simulation");
         return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, RevivePlayer());
     }
 
@@ -143,6 +220,8 @@ public class GameplayManager : MonoBehaviour
     {
         yield return new WaitUntil(() => Player);
         Player.Health.Revive();
+        yield return UIManager.WaitUntilViewChanged();
+        AudioManager.Play("gameplay");
     }
 
     private void OnEnable()
@@ -170,7 +249,7 @@ public class GameplayManager : MonoBehaviour
     private NextState<RuntimeState> SetWorldSettings()
     {
         var grid = LevelGenerator.GetTileGrid();
-        return new NextState<RuntimeState>(RuntimeState.LevelStart, ApplyWorldSettings(grid));
+        return new NextState<RuntimeState>(RuntimeState.GotoLevelRuntime, ApplyWorldSettings(grid));
     }
 
     private IEnumerator ApplyWorldSettings(LevelGenerator.Tile[] grid)
@@ -284,10 +363,15 @@ public class GameplayManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            stateMachine.SetState(RuntimeState.StartGame);
-        }
+        //if (Input.GetKeyDown(KeyCode.R))
+        //{
+        //    stateMachine.SetState(RuntimeState.StartGame);
+        //}
+    }
+
+    internal static void SetGameplayState(RuntimeState newRuntimeState)
+    {
+        ins.stateMachine.SetState(newRuntimeState);
     }
 }
 
