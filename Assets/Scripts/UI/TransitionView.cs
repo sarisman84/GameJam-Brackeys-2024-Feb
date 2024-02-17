@@ -37,6 +37,8 @@ public class TransitionView : AbstractViewController
         var sequence = DOTween.Sequence();
         foreach (var tween in transitionInTweens)
         {
+            tween.tweenInfo.duration = transitionEnterDuration;
+            tween.tweenInfo.ease = transitionEnterEase;
             sequence.Insert(0, tween.Execute());
         }
         interruptDefaultTransition = true;
@@ -75,6 +77,8 @@ public class TransitionView : AbstractViewController
         var sequence = DOTween.Sequence();
         foreach (var tween in transitionOutTweens)
         {
+            tween.tweenInfo.duration = transitionExitDuration;
+            tween.tweenInfo.ease = transitionExitEase;
             sequence.Insert(0, tween.Execute());
         }
         interruptDefaultTransition = true;

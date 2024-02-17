@@ -11,6 +11,7 @@ public abstract class AbstractViewController : MonoBehaviour
     public Ease transitionEnterEase, transitionExitEase;
     protected CanvasGroup viewGroup;
     public UIView type;
+    public bool makeNextViewWaitForExitTransition;
     protected Tween currentTween;
     protected bool interruptDefaultTransition;
 
@@ -29,7 +30,24 @@ public abstract class AbstractViewController : MonoBehaviour
         viewGroup.blocksRaycasts = false;
     }
 
+
+    public void SetViewActive(bool newState)
+    {
+        viewGroup.alpha = newState ? 1.0f : 0.0f;
+        viewGroup.blocksRaycasts = newState;
+    }
+
+    public bool IsActive()
+    {
+        return viewGroup.alpha > 0.0f && viewGroup.blocksRaycasts;
+    }
+
     public IEnumerator ViewEnter(UIView oldView)
+    {
+        yield return HandleEnteringTheView(oldView);
+    }
+
+    private IEnumerator HandleEnteringTheView(UIView oldView)
     {
         yield return OnViewEnter(oldView);
         if (interruptDefaultTransition)
@@ -37,17 +55,31 @@ public abstract class AbstractViewController : MonoBehaviour
             interruptDefaultTransition = false;
             yield break;
         }
-
+        SetViewActive(false);
         currentTween = viewGroup
             .DOFade(1.0f, transitionEnterDuration)
             .SetEase(transitionEnterEase);
         yield return currentTween.WaitForCompletion();
         viewGroup.blocksRaycasts = true;
+    }
+
+    public IEnumerator ViewExit(UIView newView)
+    {
+        if (!makeNextViewWaitForExitTransition)
+        {
+            StartCoroutine(HandleExitingTheView(newView));
+        }
+        else
+        {
+            yield return HandleExitingTheView(newView);
+        }
+
+
 
 
     }
 
-    public IEnumerator ViewExit(UIView newView)
+    private IEnumerator HandleExitingTheView(UIView newView)
     {
         yield return OnViewExit(newView);
         if (interruptDefaultTransition)
@@ -55,12 +87,12 @@ public abstract class AbstractViewController : MonoBehaviour
             interruptDefaultTransition = false;
             yield break;
         }
+        SetViewActive(true);
         currentTween = viewGroup
             .DOFade(0.0f, transitionExitDuration)
             .SetEase(transitionExitEase);
         yield return currentTween.WaitForCompletion();
         viewGroup.blocksRaycasts = false;
-
     }
 
     protected abstract IEnumerator OnViewEnter(UIView oldView);

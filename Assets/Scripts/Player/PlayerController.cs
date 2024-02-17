@@ -50,8 +50,7 @@ public class PlayerController : MonoBehaviour
     }
     private void OnPausePerformed(InputAction.CallbackContext context)
     {
-        pauseToggleInput = !pauseToggleInput;
-        if (pauseToggleInput)
+        if (!GameplayManager.IsPaused)
         {
 
             UIManager.SetCurrentViewTo(UIManager.UIView.PauseMenu);
@@ -59,13 +58,13 @@ public class PlayerController : MonoBehaviour
         else
         {
 
-            UIManager.SetCurrentViewTo(lastKnownView);
+            UIManager.SetCurrentViewTo(UIManager.UIView.HUD);
         }
     }
 
     private void OnWeaponSelectCanceled(InputAction.CallbackContext context)
     {
-        UIManager.SetCurrentViewTo(lastKnownView);
+        UIManager.SetCurrentViewTo(UIManager.UIView.HUD);
     }
 
     private void OnWeaponSelectPerformed(InputAction.CallbackContext context)

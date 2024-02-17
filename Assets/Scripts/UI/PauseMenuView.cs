@@ -30,16 +30,18 @@ public class PauseMenuView : AbstractViewController
 
     private void GotoMainMenu()
     {
+        UIManager.GetView<HUDView>(UIManager.UIView.HUD).SetViewActive(false);
         GameplayManager.SetGameplayState(RuntimeState.GotoPreRuntime);
     }
 
     private void OpenSettings()
     {
-
+        SettingsManager.SetActive(true);
     }
 
     private void ResumeGame()
     {
+        SettingsManager.SetActive(false);
         GameplayManager.UnpauseGame();
         UIManager.BacktrackToOldView();
         GameplayManager.Player.pauseToggleInput = false;

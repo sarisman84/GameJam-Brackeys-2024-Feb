@@ -29,11 +29,12 @@ public class MainMenuView : AbstractViewController
 
     private void OpenSettings()
     {
-
+        SettingsManager.SetActive(true);
     }
 
     private void PlayGame()
     {
+        SettingsManager.SetActive(false);
         GameplayManager.SetGameplayState(RuntimeState.StartGame);
     }
 }

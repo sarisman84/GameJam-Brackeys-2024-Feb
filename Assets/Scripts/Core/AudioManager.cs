@@ -189,6 +189,9 @@ public class AudioManager : MonoBehaviour
 
     public static void Stop(string name)
     {
+        if (!Ins.playingSources.ContainsKey(name.ToLower()))
+            return;
+
         var sources = Ins.playingSources[name.ToLower()];
 
         foreach (var source in sources)

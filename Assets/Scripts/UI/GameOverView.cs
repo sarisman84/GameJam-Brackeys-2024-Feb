@@ -16,7 +16,7 @@ public class GameOverView : AbstractViewController
 
     private void GotoMainMenu()
     {
-        GameplayManager.SetGameplayState(RuntimeState.PreRuntime);
+        GameplayManager.SetGameplayState(RuntimeState.GotoPreRuntime);
     }
 
     private void RestartRuntime()

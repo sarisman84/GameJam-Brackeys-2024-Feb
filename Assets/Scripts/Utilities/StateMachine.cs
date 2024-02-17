@@ -27,6 +27,7 @@ public class StateMachine<TEnum> where TEnum : Enum
     private bool runStateMachine;
     private Coroutine routine;
     private MonoBehaviour owner;
+    public event Func<NextState<TEnum>, IEnumerator> onStateChange;
 
     public TEnum CurrentState => currentState;
     public NextState<TEnum> GetEvent(TEnum state) => stateMachine[state]();

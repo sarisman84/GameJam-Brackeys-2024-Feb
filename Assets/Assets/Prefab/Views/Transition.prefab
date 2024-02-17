@@ -589,10 +589,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20800e3442e75054f9cd295e3fba29a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transitionEnterDuration: 0
-  transitionExitDuration: 0
-  transitionEnterEase: 0
-  transitionExitEase: 0
+  transitionEnterDuration: 1
+  transitionExitDuration: 1
+  transitionEnterEase: 3
+  transitionExitEase: 2
   type: 2
   transitionInGroup: {fileID: 7687883004846832706}
   transitionInTweens:

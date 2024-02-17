@@ -71,7 +71,7 @@ public class GameplayManager : MonoBehaviour
                 _ins = FindObjectOfType<GameplayManager>();
                 DontDestroyOnLoad(_ins);
             }
-              
+
             return _ins;
         }
     }
@@ -106,11 +106,15 @@ public class GameplayManager : MonoBehaviour
             { RuntimeState.GotoLevelRuntime, StartLevelRuntime },
             { RuntimeState.LevelRuntime, UpdateLevel },
             { RuntimeState.GotoLevelOver, GotoGameOver },
-            { RuntimeState.LevelOver, OnGameOverState }
+            { RuntimeState.LevelOver, OnGameOverState },
+            { RuntimeState.GotoPreRuntime, GotoPreRuntimeIdle }
         }, RuntimeState.InitIntoPreRuntime);
 
 
     }
+
+
+
     private int GetDifficulty(float currentDifficultyRate)
     {
         previousDifficulty = currentDifficulty;
@@ -122,6 +126,27 @@ public class GameplayManager : MonoBehaviour
         return currentDifficulty;
     }
 
+    private NextState<RuntimeState> GotoPreRuntimeIdle()
+    {
+        Player.SetActive(false);
+        EnemyManager.KillAllSpawnedEnemies();
+        BulletManager.Get.UnloadAllBullets();
+        UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
+        var loadingScreen = UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen);
+        loadingScreen.SetTransitionText("");
+        loadingScreen.makeNextViewWaitForExitTransition = true;
+        return new NextState<RuntimeState>(RuntimeState.PreRuntime, ToPreRuntimeIdle(loadingScreen));
+    }
+
+    private IEnumerator ToPreRuntimeIdle(TransitionView loadingScreen)
+    {
+        AudioManager.Stop("gameplay");
+        yield return UIManager.WaitUntilViewChanged();
+        yield return WipeWorld();
+        AudioManager.Play("main_menu", true);
+        loadingScreen.makeNextViewWaitForExitTransition = false;
+    }
+
     private NextState<RuntimeState> OnGameOverState()
     {
         UIManager.SetCurrentViewTo(UIManager.UIView.GameOver);
@@ -130,15 +155,12 @@ public class GameplayManager : MonoBehaviour
 
     private NextState<RuntimeState> Idle()
     {
-
         UIManager.SetCurrentViewTo(UIManager.UIView.MainMenu);
-        return new NextState<RuntimeState>(RuntimeState.PreRuntime, IdleUpdate());
+        return new NextState<RuntimeState>(RuntimeState.PreRuntime, null);
     }
 
-    private IEnumerator IdleUpdate()
+    private IEnumerator WipeWorld()
     {
-        yield return new WaitUntil(() => AudioManager.HasInitialized);
-        AudioManager.Play("main_menu", true);
         if (LevelGenerator.IsWorldLoaded())
             yield return LevelGenerator.ClearGeneratedWorld();
     }
@@ -151,12 +173,17 @@ public class GameplayManager : MonoBehaviour
     private IEnumerator WaitForInit()
     {
         yield return new WaitUntil(() => Player);
+        yield return new WaitUntil(() => AudioManager.HasInitialized);
+        yield return new WaitUntil(() => UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen));
         PauseGame();
         Player.SetActive(false);
-        yield return new WaitUntil(() => UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen));
         UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen, true);
-        UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen).SetTransitionText("");
+        var loadingScreen = UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen);
+        loadingScreen.SetTransitionText("");
+        loadingScreen.makeNextViewWaitForExitTransition = true;
+        AudioManager.Play("main_menu", true);
         yield return UIManager.WaitUntilViewChanged();
+        loadingScreen.makeNextViewWaitForExitTransition = false;
     }
 
     private NextState<RuntimeState> GotoGameOver()
@@ -221,7 +248,7 @@ public class GameplayManager : MonoBehaviour
         yield return new WaitUntil(() => Player);
         Player.Health.Revive();
         yield return UIManager.WaitUntilViewChanged();
-        AudioManager.Play("gameplay");
+        AudioManager.Play("gameplay", true);
     }
 
     private void OnEnable()

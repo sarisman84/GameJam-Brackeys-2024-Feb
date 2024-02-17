@@ -69,6 +69,8 @@ public class HUDView : AbstractViewController
         //    .WaitForCompletion();
     }
 
+   
+
     private void UpdateHealthBar()
     {
         var playerHeatlh = GameplayManager.Player.Health;
