@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 
 public class EnemyManager : MonoBehaviour
@@ -23,17 +17,16 @@ public class EnemyManager : MonoBehaviour
     }
 
     private static EnemyManager instance;
-    private static Dictionary<string, GameObject> enemyRegistry = new Dictionary<string, GameObject>();
+    private static Dictionary<string, (int, GameObject)> enemyRegistry = new Dictionary<string, (int, GameObject)>();
 
-    private List<GameObject> pooledEnemies = new List<GameObject>();
-    private List<int> pooledEnemyIDs = new List<int>();
-    private List<string> loadedEnemies = new List<string>();
-    private List<Enemy> pooledEnemyComponents = new List<Enemy>();
-    private Stack<int> availableEnemies = new Stack<int>();
+    private List<(GameObject, int, List<Enemy>)> pooledEnemies = new List<(GameObject, int, List<Enemy>)>();
 
     private GameObject Player => GameplayManager.Player.gameObject;
+    private bool addScoreFlag = true;
 
     public int enemyPoolSize = 100;
+    [Space()]
+    public string enemyDeathFX;
     private void Awake()
     {
         instance = this;
@@ -41,35 +34,42 @@ public class EnemyManager : MonoBehaviour
         GameObject[] _loadedEnemies = Resources.LoadAll<GameObject>("Enemies");
         for (int i = 0; i < _loadedEnemies.Length; ++i)
         {
-            enemyRegistry.Add(_loadedEnemies[i].name.ToLower(), _loadedEnemies[i]);
-            loadedEnemies.Add(_loadedEnemies[i].name.ToLower());
+            enemyRegistry.Add(_loadedEnemies[i].name.ToLower(), (i, _loadedEnemies[i]));
         }
 
         for (int i = 0; i < enemyPoolSize; ++i)
         {
-            InitEnemies(_loadedEnemies, i);
-            pooledEnemyComponents.Add(new Enemy());
-            pooledEnemyIDs.Add(0);
+
+            var template = new GameObject($"Enemy {i}");
+            template.transform.SetParent(transform);
+            var types = new List<Enemy>();
+            for (int x = 0; x < _loadedEnemies.Length; ++x)
+            {
+                var enemy = new Enemy();
+                var (_, enemyType) = enemyRegistry[_loadedEnemies[x].name.ToLower()];
+                var enemyObj = Instantiate(enemyType, template.transform);
+
+                enemy.gameObject = enemyObj;
+                enemy.healthComponent = enemyObj.GetComponent<Health>();
+                enemy.weaponHolder = enemyObj.GetComponent<WeaponHolder>();
+                enemy.aimBehaviour = enemyObj.GetComponent<AimBehaviour>();
+                enemy.followBehaviour = enemyObj.GetComponent<FollowBehaviour>();
+
+                if (enemy.healthComponent)
+                {
+                    var localI = i;
+                    enemy.healthComponent.onDeathEvent += () => { OnEnemyDeath(localI); };
+                }
+
+                types.Add(enemy);
+            }
+            template.SetActive(false);
+            pooledEnemies.Add((template, -1, types));
         }
 
 
     }
 
-    private static void InitEnemies(GameObject[] loadedEnemies, int index)
-    {
-        var enemyHolder = new GameObject("enemy_holder_" + index.ToString());
-
-        instance.availableEnemies.Push(index);
-        for (int i = 0; i < loadedEnemies.Length; ++i)
-        {
-            var spawnedEnemy = Instantiate(loadedEnemies[i]);
-            spawnedEnemy.transform.SetParent(enemyHolder.transform);
-            spawnedEnemy.SetActive(false);
-        }
-        enemyHolder.transform.SetParent(instance.transform);
-        enemyHolder.SetActive(false);
-        instance.pooledEnemies.Add(enemyHolder);
-    }
 
     public static GameObject SpawnEnemyAtPosition(string enemyID, Vector3 position)
     {
@@ -77,80 +77,90 @@ public class EnemyManager : MonoBehaviour
         {
             return default;
         }
-        var index = instance.availableEnemies.Pop();
-        var enemyObj = instance.pooledEnemies[index];
-        enemyObj.SetActive(true);
-        enemyObj.transform.position = position;
 
-        var childIndx = instance.loadedEnemies.IndexOf(enemyID);
-        var childObj = enemyObj.transform.GetChild(childIndx).gameObject;
-        childObj.SetActive(true);
-        childObj.transform.localPosition = Vector3.zero;
-        instance.pooledEnemyIDs[index] = childObj.GetInstanceID();
-
-        Enemy enemy = new Enemy();
-
-        enemy.aimBehaviour = childObj.GetComponent<AimBehaviour>(); ;
-        enemy.followBehaviour = childObj.GetComponent<FollowBehaviour>(); ;
-        enemy.weaponHolder = childObj.GetComponent<WeaponHolder>();
-        enemy.healthComponent = childObj.GetComponent<Health>();
-        if (enemy.healthComponent)
+        try
         {
-            enemy.healthComponent.onDeathEvent += OnEnemyDeath;
+           
+            var (template, indx, selectedType, types) = instance.GetAvailableEnemyTemplate();
+
+            var (typeIndx, type) = enemyRegistry[enemyID.ToLower()];
+            template.transform.position = position;
+
+            foreach (var t in types)
+            {
+                t.gameObject.SetActive(false);
+            }
+            types[typeIndx].gameObject.SetActive(true);
+            types[typeIndx].healthComponent?.Revive();
+            types[typeIndx].followBehaviour?.ResetPosition();
+            instance.pooledEnemies[indx] = (template, typeIndx, types);
+            AudioManager.Play("enemy_spawn");
+            return types[typeIndx].gameObject;
+        }
+        catch (Exception e)
+        {
+
+            throw e;
         }
 
-        enemy.gameObject = childObj;
-        enemy.isActive = false;
-        enemy.isAlive = true;
-
-        instance.pooledEnemyComponents[index] = enemy;
-
-        return childObj;
     }
 
-    public static void SetAliveEnemyStates(bool newState)
+    private (GameObject, int, int, List<Enemy>) GetAvailableEnemyTemplate()
     {
-        for (int i = 0; i < instance.pooledEnemyComponents.Count; i++)
+        for (int i = 0; i < pooledEnemies.Count; ++i)
         {
-            var enemy = instance.pooledEnemyComponents[i];
-            if (enemy.isAlive)
+            var (template, selectedType, types) = pooledEnemies[i];
+            if (!template.activeSelf)
             {
-                enemy.isActive = newState;
-                instance.pooledEnemyComponents[i] = enemy;
+                template.SetActive(true);
+                return (template, i, selectedType, types);
             }
         }
+
+        return default;
     }
 
-    private static void OnEnemyDeath(GameObject owner)
+
+    private static void OnEnemyDeath(int indx)
     {
-        KillEnemy(owner);
+        if (instance.addScoreFlag)
+            GameplayManager.CurrentScore += 100;
+
+        KillEnemy(indx);
+
     }
 
-    public static void KillEnemy(GameObject enemyToKill)
+    public static bool AreAllEnemiesDead()
     {
-        var index = instance.pooledEnemyIDs.IndexOf(enemyToKill.GetInstanceID());
-        if (index < 0) { return; }
-        var entry = instance.pooledEnemyComponents[index];
-        entry.isAlive = false;
-        instance.pooledEnemyComponents[index] = entry;
+        foreach (var (obj, _, _) in instance.pooledEnemies)
+        {
+            if (obj.activeSelf)
+                return false;
+        }
+        return true;
+    }
 
-        instance.pooledEnemies[index].SetActive(false);
-        instance.availableEnemies.Push(index);
+    public static void KillEnemy(int indx)
+    {
+        var (template, child, types) = instance.pooledEnemies[indx];
+        if (types != null && child != -1)
+            PFXManager.SpawnFX(instance.enemyDeathFX, types[child].gameObject.transform.position, Quaternion.identity);
+        template.SetActive(false);
+        foreach (var type in types)
+        {
+            type.gameObject.SetActive(false);
+        }
+
     }
 
     public static void KillAllSpawnedEnemies()
     {
-
+        instance.addScoreFlag = false;
         for (int i = 0; i < instance.pooledEnemies.Count; ++i)
         {
-            var spawnedEnemy = instance.pooledEnemyComponents[i];
-            if (spawnedEnemy.healthComponent)
-            {
-                spawnedEnemy.healthComponent.OnDeath(instance.pooledEnemies[i]);
-            }
-            instance.pooledEnemies[i].SetActive(false);
-            instance.availableEnemies.Push(i);
+            KillEnemy(i);
         }
+        instance.addScoreFlag = true;
     }
 
     private void FixedUpdate()
@@ -162,40 +172,58 @@ public class EnemyManager : MonoBehaviour
 
         for (int i = 0; i < pooledEnemies.Count; ++i)
         {
-            if (!pooledEnemies[i].activeSelf || !pooledEnemyComponents[i].gameObject || !pooledEnemyComponents[i].isActive)
+            var (template, selectedType, types) = pooledEnemies[i];
+            if (!template.activeSelf || selectedType == -1)
             {
                 continue;
             }
 
-            var enemy = pooledEnemyComponents[i];
+            var enemy = types[selectedType];
             var playerDir = Player.transform.position - enemy.gameObject.transform.position;
+            playerDir.Normalize();
             var dist = Vector3.Distance(Player.transform.position, enemy.gameObject.transform.position);
+
             if (enemy.aimBehaviour && enemy.weaponHolder)
             {
-                bool isWithinRange = dist <= enemy.aimBehaviour.detectionRadius;
-                bool isInLineOfSight = Physics.Raycast(enemy.gameObject.transform.position, playerDir, enemy.aimBehaviour.detectionRadius);
-
-                if (isWithinRange && isInLineOfSight)
-                {
-                    enemy.weaponHolder.SetAimingDir(playerDir);
-                    enemy.weaponHolder.FireWeapon();
-                }
+                UpdateAimBehaviour(enemy, playerDir, dist);
             }
+
 
             if (enemy.followBehaviour)
             {
-                bool isWithinRange =
-                    dist <= enemy.followBehaviour.followRadius &&
-                    dist >= enemy.followBehaviour.minFollowRadius;
-                if (isWithinRange)
-                {
-                    enemy.followBehaviour.MovementDirection = playerDir.normalized;
-                }
-                else
-                {
-                    enemy.followBehaviour.MovementDirection = Vector3.zero;
-                }
+                UpdateFollowBehaviour(enemy, playerDir, dist);
             }
+
+
+        }
+    }
+
+    private void UpdateFollowBehaviour(Enemy enemy, Vector3 playerDir, float dist)
+    {
+        bool isWithinMaxRange = dist <= enemy.aimBehaviour.detectionRadius;
+        bool isWithinMinRange = dist >= enemy.followBehaviour.minFollowRadius;
+
+        if (isWithinMaxRange && isWithinMinRange)
+        {
+            enemy.followBehaviour.MovementDirection = playerDir.normalized;
+        }
+        else
+        {
+            enemy.followBehaviour.MovementDirection = Vector3.zero;
+        }
+    }
+
+    private void UpdateAimBehaviour(Enemy enemy, Vector3 playerDir, float dist)
+    {
+        bool isWithinMaxRange = dist <= enemy.aimBehaviour.detectionRadius;
+        bool isInLineOfSight =
+            Physics.Raycast(enemy.gameObject.transform.position, playerDir, out var hit, enemy.aimBehaviour.detectionRadius, enemy.aimBehaviour.detectionMask) &&
+            hit.collider.gameObject.GetInstanceID() == Player.gameObject.GetInstanceID();
+
+        if (isWithinMaxRange && isInLineOfSight)
+        {
+            enemy.weaponHolder.SetAimingDir(playerDir);
+            enemy.weaponHolder.FireWeapon();
         }
     }
 }

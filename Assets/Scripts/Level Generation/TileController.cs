@@ -1,8 +1,5 @@
 ﻿using ExtraUtilities;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -17,6 +14,19 @@ public class TileController : MonoBehaviour
         return spawnPoints[index];
     }
 
+    public Transform GetRandomSpawnPointAndClaim()
+    {
+        var index = Random.Range(0, spawnPoints.Count);
+        var attempts = 100;
+        while (disabledSpawnPoints[index] && attempts > 0)
+        {
+            index = Random.Range(0, spawnPoints.Count);
+            attempts--;
+        }
+        disabledSpawnPoints[index] = true;
+        return spawnPoints[index];
+    }
+
     public Transform GetRandomSpawnPoint()
     {
         return GetRandomSpawnPoint(out var index);
@@ -27,6 +37,7 @@ public class TileController : MonoBehaviour
     private bool controllerState;
     private void Awake()
     {
+        disabledSpawnPoints.Clear();
         foreach (var sp in spawnPoints)
         {
             disabledSpawnPoints.Add(false);
@@ -87,7 +98,7 @@ public class TileController : MonoBehaviour
         {
             return;
         }
-
+        disabledSpawnPoints[index] = true;
         EnemyManager.SpawnEnemyAtPosition(enemySet.RandomElement, point.position);
 
     }
@@ -95,9 +106,10 @@ public class TileController : MonoBehaviour
     private void OnDrawGizmos()
     {
         if (spawnPoints.Count == 0) return;
-        foreach (var sp in spawnPoints)
+        for (int i = 0; i < spawnPoints.Count; i++)
         {
-            Gizmos.color = Color.green;
+            Transform sp = spawnPoints[i];
+            Gizmos.color = disabledSpawnPoints[i] ? Color.red : Color.green;
             Gizmos.DrawWireCube(sp.position, Vector3.one);
         }
     }

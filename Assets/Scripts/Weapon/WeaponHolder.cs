@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,6 +12,7 @@ public struct WeaponDesc
 }
 public class WeaponHolder : MonoBehaviour
 {
+    public int inventoryLimit = 6;
     private List<string> weaponInventory = new List<string>();
     private List<int> weaponClipSizeReg = new List<int>();
 
@@ -86,11 +88,15 @@ public class WeaponHolder : MonoBehaviour
         yield return new WaitForSeconds(weapon.fireRate);
     }
 
-    public void AddWeapon(string weaponID)
+    public bool AddWeapon(string weaponID)
     {
-        var index = weaponInventory.Count;
-        weaponInventory.Add(weaponID);
-        weaponClipSizeReg.Add(WeaponRegistry.GetWeapon(weaponID).clipSize);
+        var id = weaponID.Replace(" ", "_").ToLower();
+        if (inventoryLimit <= weaponInventory.Count || weaponInventory.Contains(id))
+            return false;
+
+        weaponInventory.Add(id);
+        weaponClipSizeReg.Add(WeaponRegistry.GetWeapon(id).clipSize);
+        return true;
     }
 
 
@@ -118,6 +124,8 @@ public class WeaponHolder : MonoBehaviour
 
     internal WeaponDesc GetCurrentWeapon()
     {
+        if (weaponClipSizeReg.Count == 0)
+            return default;
         return new WeaponDesc
         {
             currentClipSize = weaponClipSizeReg[selectedWeapon],

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -42,6 +39,11 @@ public class GameplayManager : MonoBehaviour
         public int minEnemyAmount;
         public int maxEnemyAmount;
         public List<EnemyGroupData> enemyTypes;
+        public List<TileData> tileData;
+        public float healthPickupChance;
+        public float weaponPickupChance;
+        public List<WeaponPickup> weaponPickupPool;
+        public int pickupAmm;
     }
 
     [Header("Level Setup")]
@@ -55,10 +57,16 @@ public class GameplayManager : MonoBehaviour
     private float currentDifficultyRate;
     private int currentDifficulty;
     private int nextDifficulty;
-    private int previousDifficulty;
+    private bool hasIncreasedDifficulty;
+    private ParticleSystem goalFX;
+
+    public static bool HasIncreasedDifficulty => ins.hasIncreasedDifficulty;
+
+
+
 
     private StateMachine<RuntimeState> stateMachine;
-    private Difficulty CurrentDifficulty => difficultyList[GetDifficulty(currentDifficultyRate)];
+    private Difficulty CurrentDifficulty => difficultyList[currentDifficulty];
 
     private bool pauseFlag = false;
     private static GameplayManager _ins;
@@ -88,7 +96,7 @@ public class GameplayManager : MonoBehaviour
         get => ins.currentScore;
         set => ins.currentScore = value;
     }
-
+    public static bool IsGoalReachable { get; private set; }
 
     private void Awake()
     {
@@ -115,20 +123,16 @@ public class GameplayManager : MonoBehaviour
 
 
 
-    private int GetDifficulty(float currentDifficultyRate)
+    private int GetDifficulty()
     {
-        previousDifficulty = currentDifficulty;
-        nextDifficulty = Mathf.Clamp(currentDifficulty + 1, currentDifficulty + 1, difficultyList.Count - 1);
-        if (difficultyList[nextDifficulty].minDifficultyRate >= currentDifficultyRate)
-        {
-            currentDifficulty = nextDifficulty;
-        }
         return currentDifficulty;
     }
 
     private NextState<RuntimeState> GotoPreRuntimeIdle()
     {
+        CurrentScore = 0;
         Player.SetActive(false);
+        PickupManager.ClearAllPickups();
         EnemyManager.KillAllSpawnedEnemies();
         BulletManager.Get.UnloadAllBullets();
         UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
@@ -188,6 +192,7 @@ public class GameplayManager : MonoBehaviour
 
     private NextState<RuntimeState> GotoGameOver()
     {
+        PickupManager.ClearAllPickups();
         EnemyManager.KillAllSpawnedEnemies();
         BulletManager.Get.UnloadAllBullets();
         return new NextState<RuntimeState>(RuntimeState.LevelOver, null);
@@ -197,7 +202,14 @@ public class GameplayManager : MonoBehaviour
     {
         var nextState = RuntimeState.LevelRuntime;
 
-        if (Vector3.Distance(Player.transform.position, Goal.transform.position) <= 1.0f)
+        var isCloseToGoal = Vector3.Distance(Player.transform.position, Goal.transform.position) <= 1.5f;
+        var areAllEnemiesDead = EnemyManager.AreAllEnemiesDead();
+
+        IsGoalReachable = areAllEnemiesDead;
+
+        UpdateGoalFX(IsGoalReachable);
+
+        if (isCloseToGoal && IsGoalReachable)
         {
             nextState = RuntimeState.LevelComplete;
         }
@@ -211,23 +223,46 @@ public class GameplayManager : MonoBehaviour
         return new NextState<RuntimeState>(nextState, null);
     }
 
+    private void UpdateGoalFX(bool playFlag)
+    {
+        var fx = goalFX;
+        if (playFlag && !fx.isEmitting)
+            fx.Play();
+        else if (fx.isEmitting)
+            fx.Stop();
+    }
+
     private NextState<RuntimeState> OnRuntimeCreateLevel()
     {
-        nextDifficulty += difficultyRate;
+        currentDifficultyRate += difficultyRate;
+        CaculateDifficulty();
         BulletManager.Get.UnloadAllBullets();
+        PickupManager.ClearAllPickups();
+        EnemyManager.KillAllSpawnedEnemies();
         UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
-        var msg = previousDifficulty != currentDifficulty ?
+        var msg = HasIncreasedDifficulty ?
             "Escalating Difficulty" :
             "Continuing Simulation";
         UIManager.GetView<TransitionView>(UIManager.UIView.LoadingScreen).SetTransitionText(msg);
         return new NextState<RuntimeState>(RuntimeState.GeneratingWorld, UIManager.WaitUntilViewChanged());
     }
 
+    private void CaculateDifficulty()
+    {
+        nextDifficulty = Mathf.Clamp(currentDifficulty + 1, currentDifficulty + 1, difficultyList.Count - 1);
+        hasIncreasedDifficulty =
+            difficultyList[nextDifficulty].minDifficultyRate <= currentDifficultyRate &&
+            currentDifficulty != difficultyList.Count - 1;
+        if (hasIncreasedDifficulty)
+        {
+            currentDifficulty = nextDifficulty;
+        }
+    }
+
     private NextState<RuntimeState> StartLevelRuntime()
     {
         UnpauseGame();
         Player.SetActive(true);
-        EnemyManager.SetAliveEnemyStates(true);
         UIManager.SetCurrentViewTo(UIManager.UIView.HUD);
         return new NextState<RuntimeState>(RuntimeState.LevelRuntime, null);
     }
@@ -235,7 +270,8 @@ public class GameplayManager : MonoBehaviour
     private NextState<RuntimeState> OnRuntimeStartCreateLevel()
     {
         AudioManager.Stop("main_menu");
-
+        currentDifficultyRate = 0;
+        CurrentScore = 0;
         BulletManager.Get.UnloadAllBullets();
         EnemyManager.KillAllSpawnedEnemies();
         UIManager.SetCurrentViewTo(UIManager.UIView.LoadingScreen);
@@ -269,7 +305,7 @@ public class GameplayManager : MonoBehaviour
     {
         PauseGame();
         Player.SetActive(false);
-        var result = LevelGenerator.GenerateNewLevelAsync(CurrentDifficulty.gridSize, tileSize);
+        var result = LevelGenerator.GenerateNewLevelAsync(CurrentDifficulty.tileData, CurrentDifficulty.gridSize, tileSize);
         return new NextState<RuntimeState>(RuntimeState.PostWorldGeneration, result);
     }
 
@@ -284,8 +320,46 @@ public class GameplayManager : MonoBehaviour
         yield return SpawnPlayer(grid);
         yield return SpawnGoal(grid, playerSpawnTileIndex);
         yield return SpawnEnemies(grid);
+        yield return SpawnPickups(grid);
         yield return new WaitForSeconds(0.5f);
         UnpauseGame();
+    }
+
+    private IEnumerator SpawnPickups(LevelGenerator.Tile[] grid)
+    {
+        for (int i = 0; i < CurrentDifficulty.pickupAmm; ++i)
+        {
+            var attempts = 100;
+            var tile = grid[Random.Range(0, grid.Length - 1)];
+            var controller = tile.spawnedPrefab.GetComponent<TileController>();
+            while (attempts > 0 && !controller)
+            {
+                tile = grid[Random.Range(0, grid.Length - 1)];
+                controller = tile.spawnedPrefab.GetComponent<TileController>();
+                attempts--;
+            }
+            if (attempts <= 0)
+            {
+                yield break;
+            }
+
+
+            var rn = Random.Range(0.0f, 1.0f);
+            var point = controller.GetRandomSpawnPointAndClaim();
+
+            if (rn <= CurrentDifficulty.healthPickupChance)
+            {
+                PickupManager.SpawnPickup("health_pack", point.position);
+            }
+            else if (rn <= CurrentDifficulty.weaponPickupChance && CurrentDifficulty.weaponPickupPool.Count > 0)
+            {
+                var weapon = CurrentDifficulty.weaponPickupPool[Random.Range(0, CurrentDifficulty.weaponPickupPool.Count)];
+                PickupManager.SpawnPickup(weapon.name.Replace(" ", "_").ToLower(), point.position);
+            }
+
+            yield return null;
+        }
+        yield return null;
     }
 
     private IEnumerator SpawnEnemies(LevelGenerator.Tile[] grid)
@@ -302,6 +376,7 @@ public class GameplayManager : MonoBehaviour
             {
                 controller.SpawnEnemies(CurrentDifficulty);
                 ammOfEnemies--;
+                Debug.Log($"Enemy spawned at {tile.spawnedPrefab.name}", tile.spawnedPrefab);
             }
 
             attempts--;
@@ -325,6 +400,7 @@ public class GameplayManager : MonoBehaviour
             if (distFromPlayerSpawn >= CurrentDifficulty.minPlayerToGoalDistance && tileController)
             {
                 Goal = tileController.SpawnObject(goalPrefab);
+                goalFX = Goal.GetComponent<ParticleSystem>();
                 tileController.SetControllerAvailability(false);
                 hasGoalSpawned = true;
                 break;
@@ -396,7 +472,7 @@ public class GameplayManager : MonoBehaviour
         //}
     }
 
-    internal static void SetGameplayState(RuntimeState newRuntimeState)
+    public static void SetGameplayState(RuntimeState newRuntimeState)
     {
         ins.stateMachine.SetState(newRuntimeState);
     }

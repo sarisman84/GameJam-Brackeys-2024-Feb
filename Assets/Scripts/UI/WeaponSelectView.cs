@@ -1,11 +1,7 @@
-﻿using DG.Tweening;
-using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.UI;
 
 
 public class WeaponSelectView : AbstractViewController
@@ -15,10 +11,13 @@ public class WeaponSelectView : AbstractViewController
     public int weaponWheelSlotAmm = 6;
     public float weaponWheelRadius = 1.0f;
     public Transform weaponWheelParent;
+    public float slowMowAmount = 0.5f;
 
     private List<string> currentWeaponsToDisplay = new List<string>();
     private List<WeaponSelectSlot> spawnedElements = new List<WeaponSelectSlot>();
     private int weaponToSelect = -1;
+    private float previousTimeScale;
+    private float previousFixedTimeDelta;
 
     protected override void Awake()
     {
@@ -51,6 +50,11 @@ public class WeaponSelectView : AbstractViewController
 
     protected override IEnumerator OnViewEnter(UIManager.UIView currentView)
     {
+        foreach (var slot in spawnedElements)
+        {
+            slot.ResetSlot();
+        }
+
         for (int i = 0; i < weaponWheelSlotAmm; i++)
         {
             WeaponSelectSlot slot = spawnedElements[i];
@@ -63,19 +67,25 @@ public class WeaponSelectView : AbstractViewController
 
             var data = WeaponRegistry.GetWeapon(currentWeaponsToDisplay[i]);
             slot.Icon = data.weaponIcon;
+            var localI = i;
             slot.OnPointerEnter += () =>
             {
-                weaponToSelect = i;
+                weaponToSelect = localI;
                 selectText.text = data.name.ToUpper();
             };
-            slot.OnPointerExit += () =>
-            {
-                weaponToSelect = -1;
-                selectText.text = string.Empty;
-            };
+            //slot.OnPointerExit += () =>
+            //{
+            //    weaponToSelect = -1;
+            //    selectText.text = string.Empty;
+            //};
         }
         selectText.text = string.Empty;
         yield return null;
+        //previousTimeScale = Time.timeScale;
+        //previousFixedTimeDelta = Time.fixedDeltaTime;
+
+        //Time.timeScale = slowMowAmount;
+        //Time.fixedDeltaTime = previousTimeScale * slowMowAmount;
     }
 
 
@@ -88,14 +98,12 @@ public class WeaponSelectView : AbstractViewController
 
     protected override IEnumerator OnViewExit(UIManager.UIView currentView)
     {
-        foreach (var slot in spawnedElements)
-        {
-            slot.ResetSlot();
-        }
-
         if (weaponToSelect != -1)
             SelectWeapon(weaponToSelect);
         yield return null;
+
+        //Time.timeScale = previousTimeScale;
+        //Time.fixedDeltaTime = previousFixedTimeDelta;
     }
 
     internal void PopulateWeaponWheel(List<string> weapons)

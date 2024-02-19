@@ -1,11 +1,10 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 
 public class GameOverView : AbstractViewController
 {
+    public TextMeshProUGUI highScoreText;
     public Button retryButton, mainMenuButton;
     protected override void Awake()
     {
@@ -26,6 +25,7 @@ public class GameOverView : AbstractViewController
 
     protected override IEnumerator OnViewEnter(UIManager.UIView oldView)
     {
+        highScoreText.text = $"Score: {GameplayManager.CurrentScore}";
         yield return null;
     }
 

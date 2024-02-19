@@ -2,12 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
-using static LevelGenerator;
-using UnityEngine.UIElements;
 using Application = UnityEngine.Application;
 using Random = UnityEngine.Random;
 
@@ -44,8 +40,8 @@ public class LevelGenerator : MonoBehaviour
     }
 
 
-    [Space()]
-    public List<TileData> tileData;
+    //[Space()]
+    private List<TileData> tileData;
     [Header("Post Processing")]
     public TileData postProcessTileData;
     public string blacklistedTileTag;
@@ -57,17 +53,30 @@ public class LevelGenerator : MonoBehaviour
     private Vector2Int currentDebugNode;
     private TileData currentDebugSelectedTile;
 
+    private List<GameObject> boundaries = new List<GameObject>();
+
     private int gridWidth;
     private int gridHeight;
     private int tileWidth;
     private int tileHeight;
     private void Awake()
     {
-        ParseTileData();
+        boundaries = new List<GameObject>();
+
+        for (int i = 0; i < 4; i++)
+        {
+            boundaries.Add(new GameObject($"Bounds {i}", typeof(BoxCollider)));
+            boundaries[i].transform.SetParent(transform);
+            var scale = boundaries[i].transform.localScale;
+            scale.y = 10.0f;
+            boundaries[i].transform.localScale = scale;
+            boundaries[i].layer = LayerMask.NameToLayer("Interactable");
+        }
     }
 
-    private void ParseTileData()
+    private IEnumerator ParseTileData(List<TileData> tileData)
     {
+        indexedTilePresets.Clear();
         for (int i = 0; i < tileData.Count; ++i)
         {
             var data = tileData[i];
@@ -81,28 +90,38 @@ public class LevelGenerator : MonoBehaviour
             for (int j = 0; j < data.validTiles_South.Count; ++j)
             {
                 var validTile = data.validTiles_South[j];
-                tile.validTileData_South.Add(tileData.IndexOf(validTile));
+                var indx = tileData.IndexOf(validTile);
+                if (indx != -1)
+                    tile.validTileData_South.Add(indx);
             }
 
             for (int j = 0; j < data.validTiles_North.Count; ++j)
             {
                 var validTile = data.validTiles_North[j];
-                tile.validTileData_North.Add(tileData.IndexOf(validTile));
+                var indx = tileData.IndexOf(validTile);
+                if (indx != -1)
+                    tile.validTileData_North.Add(tileData.IndexOf(validTile));
             }
 
             for (int j = 0; j < data.validTiles_East.Count; ++j)
             {
                 var validTile = data.validTiles_East[j];
-                tile.validTileData_East.Add(tileData.IndexOf(validTile));
+                var indx = tileData.IndexOf(validTile);
+                if (indx != -1)
+                    tile.validTileData_East.Add(tileData.IndexOf(validTile));
             }
 
             for (int j = 0; j < data.validTiles_West.Count; ++j)
             {
                 var validTile = data.validTiles_West[j];
-                tile.validTileData_West.Add(tileData.IndexOf(validTile));
+                var indx = tileData.IndexOf(validTile);
+                if (indx != -1)
+                    tile.validTileData_West.Add(tileData.IndexOf(validTile));
             }
 
             indexedTilePresets.Add(tile);
+            this.tileData = tileData;
+            yield return null;
         }
 
 
@@ -111,9 +130,9 @@ public class LevelGenerator : MonoBehaviour
 #endif
     }
 
-    public static void GenerateNewLevel(Vector2Int gridSize, Vector2Int tileSize, Action<Tile[]> onGenerationComplete = null)
+    public static void GenerateNewLevel(List<TileData> tileData, Vector2Int gridSize, Vector2Int tileSize, Action<Tile[]> onGenerationComplete = null)
     {
-        ins.StartCoroutine(ins._GenerateNewLevel(gridSize, tileSize, onGenerationComplete));
+        ins.StartCoroutine(ins._GenerateNewLevel(tileData, gridSize, tileSize, onGenerationComplete));
     }
 
 
@@ -122,9 +141,9 @@ public class LevelGenerator : MonoBehaviour
         return ins.ClearTileGrid();
     }
 
-    public static IEnumerator GenerateNewLevelAsync(Vector2Int gridSize, Vector2Int tileSize)
+    public static IEnumerator GenerateNewLevelAsync(List<TileData> tileData, Vector2Int gridSize, Vector2Int tileSize)
     {
-        yield return ins._GenerateNewLevel(gridSize, tileSize, null);
+        yield return ins._GenerateNewLevel(tileData, gridSize, tileSize, null);
     }
 
     public static TileData GetTileData(Tile tile)
@@ -142,8 +161,9 @@ public class LevelGenerator : MonoBehaviour
         return ins.grid;
     }
 
-    private IEnumerator _GenerateNewLevel(Vector2Int gridSize, Vector2Int tileSize, Action<Tile[]> onGenerationComplete)
+    private IEnumerator _GenerateNewLevel(List<TileData> tileData, Vector2Int gridSize, Vector2Int tileSize, Action<Tile[]> onGenerationComplete)
     {
+        yield return ParseTileData(tileData);
         tileWidth = tileSize.x;
         tileHeight = tileSize.y;
 
@@ -159,7 +179,34 @@ public class LevelGenerator : MonoBehaviour
         Debug.Log("[Level Manager]: Wave Function Collapse: Complete!");
 #endif
         yield return ApplyPostProcessing();
+        yield return ApplyBoundaries();
         onGenerationComplete?.Invoke(grid);
+    }
+
+    private IEnumerator ApplyBoundaries()
+    {
+        // Calculating the total dimensions of the grid
+        float totalGridWidth = gridWidth * tileWidth;
+        float totalGridHeight = gridHeight * tileHeight;
+
+        // Adjusting positions to align correctly with the grid
+        // Top boundary - move down by half a tileHeight
+        boundaries[0].transform.position = new Vector3(totalGridWidth - (tileWidth * 2), 0, totalGridHeight - tileHeight / 2);
+        boundaries[0].transform.localScale = new Vector3(totalGridWidth, boundaries[0].transform.localScale.y, 1);
+
+        // Bottom boundary
+        boundaries[1].transform.position = new Vector3(totalGridWidth - (tileWidth * 2), 0, 0 - tileHeight / 2);
+        boundaries[1].transform.localScale = new Vector3(totalGridWidth, boundaries[1].transform.localScale.y, 1);
+
+        // Left boundary
+        boundaries[2].transform.position = new Vector3(0 - tileWidth / 2, 0, totalGridHeight - (tileHeight * 2));
+        boundaries[2].transform.localScale = new Vector3(1, boundaries[2].transform.localScale.y, totalGridHeight);
+
+        // Right boundary - move left by half a tileWidth
+        boundaries[3].transform.position = new Vector3(totalGridWidth - tileWidth / 2, 0, totalGridHeight - (tileHeight * 2));
+        boundaries[3].transform.localScale = new Vector3(1, boundaries[3].transform.localScale.y, totalGridHeight);
+
+        yield return null;
     }
 
     private IEnumerator ApplyPostProcessing()
@@ -383,6 +430,9 @@ public class LevelGenerator : MonoBehaviour
     // Helper method to add valid tiles based on direction.
     private void AppendDirectionalTiles(ref HashSet<int> result, int tileIndex, Vector2Int direction)
     {
+        if (indexedTilePresets.Count <= tileIndex)
+            return;
+
         if (direction.x > 0) // East
         {
             AppendContainerToHashSet(ref result, indexedTilePresets[tileIndex].validTileData_East);

@@ -1,5 +1,4 @@
 ﻿using DG.Tweening;
-using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -22,6 +21,7 @@ public class HUDView : AbstractViewController
     [Header("Weapon")]
     public TextMeshProUGUI weaponAmmoIndicator;
     public Image weaponIcon;
+    public TextMeshProUGUI collectedWeaponPopup;
 
     private CanvasGroup viewAlpha;
     protected override void Awake()
@@ -37,7 +37,8 @@ public class HUDView : AbstractViewController
         var playerHeatlh = GameplayManager.Player.Health;
         healthBar.maxValue = playerHeatlh.maxHealth;
         healthBar.minValue = 0;
-        playerHeatlh.onDamageTakenEvent += (x) => { UpdateHealthBar(); };
+        playerHeatlh.onDamageTakenEvent += UpdateHealthBar;
+        playerHeatlh.onHealRecievedEvent += UpdateHealthBar;
 
     }
 
@@ -69,7 +70,7 @@ public class HUDView : AbstractViewController
         //    .WaitForCompletion();
     }
 
-   
+
 
     private void UpdateHealthBar()
     {
@@ -87,6 +88,7 @@ public class HUDView : AbstractViewController
         var wh = GameplayManager.Player.WeaponHolder;
         var weapon = wh.GetCurrentWeapon();
         weaponAmmoIndicator.text = $"{weapon.currentClipSize}/{weapon.weaponData.clipSize}";
+        pointsIndicator.text = $"{GameplayManager.CurrentScore}";
         weaponIcon.sprite = weapon.weaponData.weaponIcon;
         yield return null;
     }

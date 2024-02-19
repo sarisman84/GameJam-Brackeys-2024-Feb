@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
+﻿using System.Collections;
 using UnityEngine.UI;
 
 
@@ -24,12 +22,14 @@ public class PauseMenuView : AbstractViewController
 
     protected override IEnumerator OnViewExit(UIManager.UIView nextView)
     {
+        SettingsManager.SetActive(false);
         GameplayManager.UnpauseGame();
         yield return null;
     }
 
     private void GotoMainMenu()
     {
+        SettingsManager.SetActive(false);
         UIManager.GetView<HUDView>(UIManager.UIView.HUD).SetViewActive(false);
         GameplayManager.SetGameplayState(RuntimeState.GotoPreRuntime);
     }

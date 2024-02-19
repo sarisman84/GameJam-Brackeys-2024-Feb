@@ -1,4 +1,5 @@
 using Cinemachine;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,6 +11,12 @@ public class PlayerController : MonoBehaviour
     public float decceleration = 1.0f;
     [Space()]
     public InputActionAsset inputActions;
+    [Space()]
+    public GameObject model;
+    public float healthChangedAnimDur;
+    public Ease healthChangedAnimEase;
+    [Space()]
+    public GameObject pointerPrefab;
 
     private CharacterController characterController;
     private WeaponHolder weaponHolder;
@@ -22,7 +29,9 @@ public class PlayerController : MonoBehaviour
     private Plane plane = new Plane(Vector3.up, 0);
     private Health healthComponent;
 
-    private UIManager.UIView lastKnownView;
+    private GameObject pointerIns;
+
+
     public bool pauseToggleInput { get; set; }
 
 
@@ -35,8 +44,15 @@ public class PlayerController : MonoBehaviour
 
 
         Health.onDeathEvent += PlayerDeath;
+        Health.onDamageTakenEvent += ShrinkModel;
+        Health.onHealRecievedEvent += ScaleModel;
+        Health.onRevivedEvent += ResetModel;
         WeaponHolder.AddWeapon("gun");
-        WeaponHolder.AddWeapon("enemy_gun");
+        //WeaponHolder.AddWeapon("flamethrower");
+        //WeaponHolder.AddWeapon("ricochet_shot");
+        //WeaponHolder.AddWeapon("heavy_shot");
+        //WeaponHolder.AddWeapon("rapid_shot");
+        //WeaponHolder.AddWeapon("triple_shot");
 
         characterController = GetComponent<CharacterController>();
         inputActions.FindAction("move").performed += OnMovePerformed;
@@ -47,7 +63,30 @@ public class PlayerController : MonoBehaviour
         inputActions.FindAction("weapon_select").performed += OnWeaponSelectPerformed;
         inputActions.FindAction("weapon_select").canceled += OnWeaponSelectCanceled;
         inputActions.FindAction("pause").performed += OnPausePerformed;
+
+        pointerIns = Instantiate(pointerPrefab, transform);
     }
+
+    private void ResetModel()
+    {
+        model.transform.localScale = Vector3.one;
+    }
+
+    private void ShrinkModel()
+    {
+        model.transform.localScale = Vector3.one;
+        model.transform
+            .DOScale(((float)Health.CurrentHealth / (float)Health.maxHealth), healthChangedAnimDur)
+            .SetEase(healthChangedAnimEase);
+    }
+
+    private void ScaleModel()
+    {
+        model.transform
+            .DOScale(((float)Health.CurrentHealth / (float)Health.maxHealth), healthChangedAnimDur)
+            .SetEase(healthChangedAnimEase);
+    }
+
     private void OnPausePerformed(InputAction.CallbackContext context)
     {
         if (!GameplayManager.IsPaused)
@@ -69,13 +108,12 @@ public class PlayerController : MonoBehaviour
 
     private void OnWeaponSelectPerformed(InputAction.CallbackContext context)
     {
-        lastKnownView = UIManager.CurrentView;
         UIManager.SetCurrentViewTo(UIManager.UIView.WeaponSelect);
         var weaponSelectView = UIManager.GetView<WeaponSelectView>(UIManager.UIView.WeaponSelect);
         weaponSelectView.PopulateWeaponWheel(WeaponHolder.GetWeaponInventory());
     }
 
-    private void PlayerDeath(GameObject self)
+    private void PlayerDeath()
     {
         SetActive(false);
         GameplayManager.SetGameplayState(RuntimeState.GotoLevelOver);
@@ -149,11 +187,27 @@ public class PlayerController : MonoBehaviour
         {
             weaponHolder.FireWeapon();
         }
+
+        if (GameplayManager.IsGoalReachable)
+        {
+            pointerIns.SetActive(true);
+            var dir = GameplayManager.Goal.transform.position - transform.position;
+            dir.Normalize();
+            pointerIns.transform.rotation = Quaternion.LookRotation(dir);
+        }
+        else
+        {
+            pointerIns.SetActive(false);
+        }
+
     }
 
     public void SetActive(bool newState)
     {
         gameObject.SetActive(newState);
+
+        if (newState)
+            AudioManager.Play("player_spawn", transform);
     }
 
     public void SetPosition(Vector3 position)

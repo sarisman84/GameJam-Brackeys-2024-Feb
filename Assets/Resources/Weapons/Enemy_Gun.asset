@@ -21,3 +21,5 @@ MonoBehaviour:
   bulletPrefab: {fileID: 2889874362924048164, guid: 91426b22e8cb5c547aaac22e99113aa6, type: 3}
   weaponIcon: {fileID: 0}
   firePattern: default
+  impactEffect: impacteffect
+  muzzleEffect: muzzleeffect

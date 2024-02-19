@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 public struct Bullet
 {
@@ -11,7 +9,8 @@ public struct Bullet
     public float lifetime;
     public string bulletPrefabID;
     public Action<GameObject> onBulletUpdateEvent;
-    public Action<GameObject, Collider[]> onBulletCollisionEvent;
+    public Func<GameObject, Collider[], bool> onBulletCollisionEvent;
+    public bool canBounceFromInteractable;
 }
 public class BulletManager : MonoBehaviour
 {
@@ -20,7 +19,7 @@ public class BulletManager : MonoBehaviour
         public GameObject gameObject;
         public float lifetime;
         public Action<GameObject> onBulletUpdateEvent;
-        public Action<GameObject, Collider[]> onBulletCollisionEvent;
+        public Func<GameObject, Collider[], bool> onBulletCollisionEvent;
         public bool isReady;
     }
 
@@ -145,9 +144,11 @@ public class BulletManager : MonoBehaviour
             if (result.Length > 0)
             {
                 bullet.lifetime = 0;
-                bullet.onBulletCollisionEvent?.Invoke(bullet.gameObject, result);
-                pooledBullets[i] = DisableBullet(bullet);
-                availableBullets.Push(i);
+                if ((bool)bullet.onBulletCollisionEvent?.Invoke(bullet.gameObject, result))
+                {
+                    pooledBullets[i] = DisableBullet(bullet);
+                    availableBullets.Push(i);
+                }
                 continue;
             }
 

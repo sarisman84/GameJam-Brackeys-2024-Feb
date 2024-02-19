@@ -1,0 +1,5 @@
+Bugs to fix:
+- Boundaries dont scare properly
+- Performance issues on lower-end devices
+- More clarity when taking/dealing damage
+- Game looks *too* basic (some more colors/anims would be nice)

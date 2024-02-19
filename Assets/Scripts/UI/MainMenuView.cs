@@ -1,7 +1,4 @@
-﻿using DG.Tweening;
-using System;
-using System.Collections;
-using UnityEngine;
+﻿using System.Collections;
 using UnityEngine.UI;
 using static UIManager;
 

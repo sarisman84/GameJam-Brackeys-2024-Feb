@@ -7,8 +7,10 @@ public class Health : MonoBehaviour
     public int CurrentHealth => currentHealth;
     public bool HasDied { get; private set; }
 
-    public event Action<GameObject> onDeathEvent;
-    public event Action<GameObject> onDamageTakenEvent;
+    public event Action onDeathEvent;
+    public event Action onDamageTakenEvent;
+    public event Action onHealRecievedEvent;
+    public event Action onRevivedEvent;
 
 
     private void Awake()
@@ -19,21 +21,29 @@ public class Health : MonoBehaviour
     {
         HasDied = false;
         currentHealth = maxHealth;
+        onRevivedEvent?.Invoke();
     }
     public void OnDamageTaken(int damage)
     {
         currentHealth -= damage;
-        onDamageTakenEvent?.Invoke(gameObject);
+        onDamageTakenEvent?.Invoke();
         if (currentHealth <= 0)
         {
-            OnDeath(gameObject);
+            OnDeath();
             HasDied = true;
         }
     }
 
-    public void OnDeath(GameObject owner)
+    public void OnDeath()
     {
-        onDeathEvent?.Invoke(owner);
+        onDeathEvent?.Invoke();
+    }
+
+    public void Heal(int amount)
+    {
+        PFXManager.SpawnFX("healeffect", transform.position, Quaternion.identity);
+        onHealRecievedEvent?.Invoke();
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
     }
 }
 

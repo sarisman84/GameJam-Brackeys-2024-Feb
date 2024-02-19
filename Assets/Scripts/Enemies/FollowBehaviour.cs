@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class FollowBehaviour : MonoBehaviour
@@ -25,5 +19,13 @@ public class FollowBehaviour : MonoBehaviour
     private void Update()
     {
         characterController.Move(movementDirection * movementSpeed * Time.deltaTime);
+    }
+
+
+    public void ResetPosition()
+    {
+        characterController.enabled = false;
+        transform.localPosition = Vector3.zero;
+        characterController.enabled = true;
     }
 }

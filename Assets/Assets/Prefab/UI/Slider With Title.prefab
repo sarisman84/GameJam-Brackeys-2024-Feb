@@ -131,8 +131,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Volume
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 41b9a0e473c6f2b4eb7a06e62f0248df, type: 2}
+  m_sharedMaterial: {fileID: 2464603346354039950, guid: 41b9a0e473c6f2b4eb7a06e62f0248df, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -212,7 +212,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3056614551972565860, guid: a1aac0446a099174d85de8994f64fdcf, type: 3}
       propertyPath: m_Value
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3547795353983834349, guid: a1aac0446a099174d85de8994f64fdcf, type: 3}
       propertyPath: m_AnchorMax.x

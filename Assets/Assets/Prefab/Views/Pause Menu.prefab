@@ -59,6 +59,7 @@ MonoBehaviour:
   transitionEnterEase: 4
   transitionExitEase: 4
   type: 5
+  makeNextViewWaitForExitTransition: 0
   resumeButton: {fileID: 1034431672076637386}
   settingsButton: {fileID: 6663285123568679357}
   quitButton: {fileID: 8018111385122091714}
@@ -120,8 +121,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: 11260fb345a0549428975f19dcc48a6b, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.33962262, g: 0.33962262, b: 0.33962262, a: 0.46666667}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

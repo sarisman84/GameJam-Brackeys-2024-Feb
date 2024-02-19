@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
-using static Unity.VisualScripting.Member;
+using Random = UnityEngine.Random;
 
 
 public class AudioManager : MonoBehaviour
@@ -30,6 +29,7 @@ public class AudioManager : MonoBehaviour
         public bool baseLoop;
         public bool playOnAwake;
         public bool canBePaused;
+        public float randomizedPitch;
     }
 
     public List<Audio> audioList;
@@ -247,6 +247,11 @@ public class AudioManager : MonoBehaviour
         source.reverbZoneMix = info.reverbZoneMix;
         source.playOnAwake = false;
         source.ignoreListenerPause = !info.canBePaused;
+
+        if (Mathf.Abs(info.randomizedPitch) > 0.0f)
+        {
+            source.pitch = info.basePitch + Random.Range(-info.randomizedPitch, info.randomizedPitch);
+        }
     }
 
     private int AvailableSource(string name)
