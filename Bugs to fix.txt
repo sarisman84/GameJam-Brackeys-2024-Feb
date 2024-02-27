@@ -3,3 +3,8 @@ Bugs to fix:
 - Performance issues on lower-end devices
 - More clarity when taking/dealing damage
 - Game looks *too* basic (some more colors/anims would be nice)
+- Lack of a proper tutorial (no explanation on what the pickups do)
+
+New Features:
+- Proper levels (not just arenas)
+  - Have some form of exploration or platforming (like RnC3)
